@@ -662,3 +662,47 @@ jdbc.password=123
 3. 写service层接口和实现类
 4. 写控制层
    1. 写主页
+
+
+
+
+
+
+
+
+
+### x. 找数据
+
+1. 找4张商品照片
+
+2. 找全部商品介绍照片
+
+3. 找商品名称
+
+4. 找商品参数信息
+
+   ```txt
+   main={机身颜色,存储容量};机身颜色={红色,白色,黑色};存储容量={12+256,12+128,16+128,16+256};A={1,2,3};
+   ```
+
+```sql
+(null, '商品1', 1,
+        'main={机身颜色,存储容量};机身颜色={红色,白色,黑色};存储容量={12+256,12+128,16+128,16+256};A={1,2,3}', 19.9,
+        100, 1,
+        'https://img13.360buyimg.com/n1/s450x450_jfs/t1/91224/1/52035/43615/66e97ba6F8316abb0/bdbd9bfc5aa3cfe6.jpg.avif;
+                    https://img.alicdn.com/imgextra/i1/76093316/O1CN01NZysHq1aMmAruJbdY_!!76093316.jpg_.webp;
+https://img.alicdn.com/imgextra/i2/76093316/O1CN01VHZpOC1aMmAmkxZkn_!!76093316.jpg_q50.jpg_.webp;
+https://img.alicdn.com/imgextra/i4/76093316/O1CN018vgDSI1aMmLillWPc_!!76093316.jpg_q50.jpg_.webp;
+https://img.alicdn.com/imgextra/i1/2216790685291/O1CN017Et6r01oxKX4z4sW7_!!2216790685291.jpg;        '2023-01-01', '1'),
+```
+
+
+
+5. 商品类别
+
+
+
+### 写评论
+
+
+
