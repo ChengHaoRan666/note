@@ -5,13 +5,13 @@
 - [x] 03. 基础入门-SpringBoot的大时代背景     11:32
 - [x] 04. 基础入门-SpringBoot官方文档架构     10:08
 - [x] 05. 基础入门-SpringBoot-HelloWorld     19:14
-- [ ] 06. 基础入门-SpringBoot-依赖管理特性     14:10
-- [ ] 07. 基础入门-SpringBoot-自动配置特性     18:40
+- [x] 06. 基础入门-SpringBoot-依赖管理特性     14:10
+- [x] 07. 基础入门-SpringBoot-自动配置特性     18:40
 
-- [ ] 08. 底层注解-@Configuration详解        18:59
-- [ ] 09. 底层注解-@Import导入组件            05:32
-- [ ] 10. 底层注解-@Conditional条件装配       08:13
-- [ ] 11. 底层注解-@ImportResource导入Spring配置文件 02:37
+- [x] 08. 底层注解-@Configuration详解        18:59
+- [x] 09. 底层注解-@Import导入组件            05:32
+- [x] 10. 底层注解-@Conditional条件装配       08:13
+- [x] 11. 底层注解-@ImportResource导入Spring配置文件 02:37
 - [ ] 12. 底层注解-@ConfigurationProperties配置绑定 09:46
 
 - [ ] 13. 自动配置【源码分析】-自动包规则原理  08:02
@@ -24,7 +24,7 @@
 
 
 
-### 二.（150min）
+### 二.（75min）
 
 - [ ] 20. 配置文件-yaml的用法                30:26
 - [ ] 21. 配置文件-自定义类绑定的配置提示      05:49
