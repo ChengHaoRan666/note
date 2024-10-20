@@ -95,7 +95,7 @@ public class Hello {
       <artifactId>spring-boot-starter-tomcat</artifactId>
       <version>2.3.4.RELEASE</version>
       <scope>compile</scope>
-    </dependency>
+</dependency>
 ```
 
 
@@ -221,13 +221,13 @@ public class MyConfig {}
 
 
 
-#### 3.3 配置绑定
+#### 3.3 配置绑定（信息注入）
 
 ##### 1. @ConfigurationProperties + @Component
 
 ==@Component==注解将类加入到容器中
 
-==@ConfigurationProperties（prefix = "前缀"）== 注解可以将配置信息自动导入到<font color="red">已经在容器中的 Bean</font>
+==@ConfigurationProperties（prefix = "在配置文件中的前缀"）== 注解可以将配置信息自动导入到<font color="red">已经在容器中的 Bean</font>
 
 ```java
 @Autowired
@@ -260,7 +260,7 @@ a.name=name
 
 ==@EnableConfigurationProperties（类名.class）==在<font color="red">配置类上写</font>，指明开启属性绑定并且将该类加入容器中
 
-==@ConfigurationProperties==在类上写
+==@ConfigurationProperties(prefix="在配置文件中的前缀")==在类上写
 
 ```java
 @Configuration(proxyBeanMethods = false)
@@ -283,5 +283,220 @@ public class car {
 
 ## 三. 自动配置原理
 
+`@SpringBootApplication`注释相当于：`@SpringBootConfiguration`,`@EnableAutoConfiguration`,`@ComponentScan`这三个注解。
+
+```java
+@SpringBootConfiguration
+@EnableAutoConfiguration
+@ComponentScan(
+    excludeFilters = {@Filter(
+    type = FilterType.CUSTOM,
+    classes = {TypeExcludeFilter.class}
+), @Filter(
+    type = FilterType.CUSTOM,
+    classes = {AutoConfigurationExcludeFilter.class}
+)}
+)
+```
+
+### 1. `@SpringBootConfiguration`
+
+表示当前是一个配置类
 
 
+
+### 2. `@ComponentScan`
+
+```java
+@ComponentScan(
+    excludeFilters = {@Filter(
+    type = FilterType.CUSTOM,
+    classes = {TypeExcludeFilter.class}
+), @Filter(
+    type = FilterType.CUSTOM,
+    classes = {AutoConfigurationExcludeFilter.class}
+)}
+)
+```
+
+指定扫描哪些Spring注解
+
+
+
+### 3. `@EnableAutoConfiguration`
+
+`@EnableAutoConfiguration`注解相当于`@AutoConfigurationPackage`+`@Import({AutoConfigurationImportSelector.class})`这两个注解。
+
+
+
+#### 3.1 `@AutoConfigurationPackage`注解
+
+```java
+@Import({AutoConfigurationPackages.Registrar.class})
+public @interface AutoConfigurationPackage {
+    String[] basePackages() default {};
+
+    Class<?>[] basePackageClasses() default {};
+}
+```
+
+自动配置包。
+
+批量注册，将MainApplication所在的包的组件导入进来。
+
+
+
+#### 3.2 `@Import({AutoConfigurationImportSelector.class})`注解
+
+会从写死的配置文件`org.springframework.boot.spring-boot\3.3.4\spring-boot-3.3.4.jar!\META-INF\spring.factories`中读取要加入的组件，总共127个。但是并不是每次都需要加载127个，按需开启自动配置项：按照条件装配规则（@Conditional），最终会按需配置。
+
+<font color="red">SpringBoot启动会全部加载，但是最终按照条件装配按需配置</font>
+
+
+
+### 4. 总结：
+
+- SpringBoot先加载所有的自动配置类  xxxxxAutoConfiguration
+- 每个自动配置类按照条件进行生效，默认都会绑定配置文件指定的值。xxxxProperties里面拿。xxxProperties和配置文件进行了绑定
+- 生效的配置类就会给容器中装配很多组件
+- 只要容器中有这些组件，相当于这些功能就有了
+- 定制化配置
+
+- - 用户直接自己@Bean替换底层的组件
+  - 用户去看这个组件是获取的配置文件什么值就去修改(更常用)
+
+<font color="red">**xxxxxAutoConfiguration ---> 组件  --->** **xxxxProperties里面拿值  ----> application.properties**</font>
+
+
+
+## 四. 配置文件
+
+### 1. yaml 基本语法
+
+- key: value；kv之间有空格
+- 大小写敏感
+- 使用缩进表示层级关系
+- 缩进不允许使用tab，只允许空格
+- 缩进的空格数不重要，只要相同层级的元素左对齐即可
+- '#'表示注释
+- 字符串无需加引号，如果要加，''与""表示字符串内容 会被 转义/不转义
+
+
+
+### 2. 数据类型
+
+1. 字面量：单个的、不可再分的值。date、boolean、string、number、null
+
+   ```yaml
+   key: val
+   ```
+
+2. 对象：键值对的集合。map，hash，set
+
+    ```yaml
+    行内写法：  k: {k1:v1,k2:v2,k3:v3}
+    #或
+    k: 
+    	k1: v1
+    	k2: v2
+    	k3: v3
+    ```
+    
+3. 数组：一组按次序排列的值。array，list
+
+    ```yaml
+    行内写法：  k: [v1,v2,v3]
+    #或者
+    k:
+     - v1
+     - v2
+     - v3
+    ```
+
+
+
+### 3. 实际运用
+
+```java
+@Data
+public class Person {
+	
+	private String userName;
+	private Boolean boss;
+	private Date birth;
+	private Integer age;
+	private Pet pet;
+	private String[] interests;
+	private List<String> animal;
+	private Map<String, Object> score;
+	private Set<Double> salarys;
+	private Map<String, List<Pet>> allPets;
+}
+
+@Data
+public class Pet {
+	private String name;
+	private Double weight;
+}
+```
+
+转换为yaml：
+
+```yaml
+# yaml表示以上对象
+person:
+  userName: zhangsan
+  boss: false
+  birth: 2019/12/12 20:12:33
+  age: 18
+  pet: 
+    name: tomcat
+    weight: 23.4
+  interests: [篮球,游泳]
+  animal: 
+    - jerry
+    - mario
+  score:
+    english: 
+      first: 30
+      second: 40
+      third: 50
+    math: [131,140,148]
+    chinese: {first: 128,second: 136}
+  salarys: [3999,4999.98,5999.99]
+  allPets:
+    sick:
+      - {name: tom}
+      - {name: jerry,weight: 47}
+    health: [{name: mario,weight: 47}]
+```
+
+
+
+## 五. Web开发
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## 六. 数据访问
+
+## 七. 单元测试
+
+## 八. 指标监控
+
+## 九.原理解析

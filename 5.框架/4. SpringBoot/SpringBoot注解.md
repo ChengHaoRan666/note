@@ -4,7 +4,7 @@
 >
 > 1. @RestController 注解相当于@Controller + @ResponseBody
 > 2. @Controller 注解用于表示控制器
-> 3. @ResponseBody 注解将返回值转换为 json 发送给 http 的响应体中，不经过视图解析器
+> 3. @ResponseBody 注解的类中的由@RequestMapping注解的方法，返回值转换为 json 发送给 http 的响应体中，不经过视图解析器
 > 4. @RestController 是 REST 风格的注解
 
 > @SpringBootApplication 注解
