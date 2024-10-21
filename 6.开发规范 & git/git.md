@@ -64,6 +64,20 @@
 
 
 
+
+
+对于网络不稳定可以切换SSH连接：
+
+```text
+git remote set-url origin git@github.com:ChengHaoRan666/your-repo.git
+```
+
+origin 是库的别名，可以通过`git remote -v`查看，`ChengHaoRan666`是用户名，`your-repo`是仓库名
+
+
+
+
+
 ### 4. github 上添加同伴
 
 1. 在项目的设置中找到 collaborators 添加伙伴
