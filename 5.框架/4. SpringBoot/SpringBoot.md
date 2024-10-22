@@ -152,9 +152,15 @@ public class Hello {
 
 > 方式一：通过xml文件配置
 
-> 方式二：通过 @Bean ，@Component，@Service，@Controller，@Repository注解
+> 方式二：@Bean ，@Component，@Service，@Controller，@Repository
 >
 > @Bean是加在方法上，将返回值作为容器交给Spring管理
+>
+> @Service用于Service层
+>
+> @Controller用于web层
+>
+> @Repository用于dao层
 
 > 方法三：通过@Configuration注解为配置类
 > 有一个属性：proxyBeanMethods = false，用来设置是否是代理 Bean 的方法
@@ -588,105 +594,212 @@ html不直接支持`delete`和`put`请求，需要在内容中加上一个隐藏
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#### 2.2 REST原理
+
+```java
+// HiddenHttpMethodFilter.java
+protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        HttpServletRequest requestToUse = request;
+        if ("POST".equals(request.getMethod()) && request.getAttribute("jakarta.servlet.error.exception") == null) {
+            String paramValue = request.getParameter(this.methodParam);
+            if (StringUtils.hasLength(paramValue)) {
+                String method = paramValue.toUpperCase(Locale.ENGLISH);
+                if (ALLOWED_METHODS.contains(method)) {
+                    requestToUse = new HttpMethodRequestWrapper(request, method);
+                }
+            }
+        }
+
+        filterChain.doFilter((ServletRequest)requestToUse, response);
+    }
+```
+
+1. 当进行提交后进行过滤，先将Request赋值给requestToUse
+2. 判断Request的提交方法是不是`POST`并且判断是否有异常，满足条件继续
+3. `request.getParameter(this.methodParam);`获取提交的时候传递的提交方式
+4. 判断提交方式是否为空字符串或为null，不是继续
+5. 判断提交方式是否在`ALLOWED_METHODS`中，如果在继续
+6. 创建`HttpMethodRequestWrapper`，将Request的提交方式替换为真正的提交方式
+7. 当前过滤器功能完成，继续过滤
+
+
+
+
+
+#### 2.3 自定义提交方式的参数
+
+默认是`_method`，原因是`this.methodParam`获取的是`methodParam`，这个值初始化为`_method`，我们可以自定义一个组件通过`setMethodParam`方法修改`this.methodParam`。
+
+```java
+@Configuration
+class Configuration{
+    @Bean
+    public HiddenHttpMethodFilter hiddenHttpMethodFilter() {
+        HiddenHttpMethodFilter hiddenHttpMethodFilter = new HiddenHttpMethodFilter();
+        hiddenHttpMethodFilter.setMethodParam("chr"); // 设置自定义参数名
+        return hiddenHttpMethodFilter;
+    }
+}
+```
+
+
+
+#### 2.4 请求映射原理
+
+`org.springframework.web.servlet.DispatcherServlet`管理请求映射。其间接继承在HttpServlet中，方法`doService`处理请求，在`doService`中又调用`doDispatch`方法。
+
+```java
+protected void doDispatch(HttpServletRequest request, HttpServletResponse response) throws Exception {
+    HttpServletRequest processedRequest = request;
+    HandlerExecutionChain mappedHandler = null;
+    boolean multipartRequestParsed = false;
+    WebAsyncManager asyncManager = WebAsyncUtils.getAsyncManager(request);
+
+    try {
+        try {
+            ModelAndView mv = null;
+            Exception dispatchException = null;
+
+            try {
+                processedRequest = this.checkMultipart(request);
+                multipartRequestParsed = processedRequest != request;
+                mappedHandler = this.getHandler(processedRequest);
+                if (mappedHandler == null) {
+                    this.noHandlerFound(processedRequest, response);
+                    return;
+                }
+
+                HandlerAdapter ha = this.getHandlerAdapter(mappedHandler.getHandler());
+                String method = request.getMethod();
+                boolean isGet = HttpMethod.GET.matches(method);
+                if (isGet || HttpMethod.HEAD.matches(method)) {
+                    long lastModified = ha.getLastModified(request, mappedHandler.getHandler());
+                    if ((new ServletWebRequest(request, response)).checkNotModified(lastModified) && isGet) {
+                        return;
+                    }
+                }
+
+                if (!mappedHandler.applyPreHandle(processedRequest, response)) {
+                    return;
+                }
+
+                mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
+                if (asyncManager.isConcurrentHandlingStarted()) {
+                    return;
+                }
+
+                this.applyDefaultViewName(processedRequest, mv);
+                mappedHandler.applyPostHandle(processedRequest, response, mv);
+            } catch (Exception var20) {
+                dispatchException = var20;
+            } catch (Throwable var21) {
+                dispatchException = new ServletException("Handler dispatch failed: " + var21, var21);
+            }
+
+            this.processDispatchResult(processedRequest, response, mappedHandler, mv, (Exception)dispatchException);
+        } catch (Exception var22) {
+            triggerAfterCompletion(processedRequest, response, mappedHandler, var22);
+        } catch (Throwable var23) {
+            triggerAfterCompletion(processedRequest, response, mappedHandler, new ServletException("Handler processing failed: " + var23, var23));
+        }
+
+    } finally {
+        if (asyncManager.isConcurrentHandlingStarted()) {
+            if (mappedHandler != null) {
+                mappedHandler.applyAfterConcurrentHandlingStarted(processedRequest, response);
+            }
+
+            asyncManager.setMultipartRequestParsed(multipartRequestParsed);
+        } else if (multipartRequestParsed || asyncManager.isMultipartRequestParsed()) {
+            this.cleanupMultipart(processedRequest);
+        }
+
+    }
+}
+```
+
+在`mappedHandler = this.getHandler(processedRequest);`中找到了处理请求的方法。
+
+
+
+#### 2.5 请求参数获取
+
+1. `@PathVariable`
+   可以获取url的参数
+   ==@PathVariable Map<String, String> map==可以获取所有参数
+
+   ```java
+   @RequestMapping("/car/{id}/name/{name}")
+       public String test1(@PathVariable("id") String id, 
+                           @PathVariable("name") String name, 
+                           @PathVariable Map<String, String> map) {
+           System.out.println(map);
+           return id + " " + name;
+       }
+   ```
+
+2. `@RequestHeader `
+   可以获取请求头信息
+   ==@RequestHeader Map<String, Object> map==可以获取全部请求头信息
+
+   ```java
+   @RequestMapping("/car/{id}/name/{name}")
+       public Map<String, Object> test2(
+               @RequestHeader("host") String host,
+               @RequestHeader Map<String, Object> map) {
+           Map<String, Object> map1 = new HashMap<>();
+   
+           map1.put("map", map);
+           map1.put("host", host);
+           return map1;
+       }
+   ```
+
+3. `@RequestParam`
+
+   ```java
+   <!--请求：http://localhost:8080/test3?age=1&lists=1&lists=2-->
+   @RequestMapping("/test3")
+       public Map<String, Object> test3(
+               @RequestParam("age") Integer age,
+               @RequestParam("lists") List<Integer> lists
+       ) {
+           Map<String, Object> map = new HashMap<>();
+           map.put("age", age);
+           map.put("lists", lists);
+           return map;
+       }
+   ```
+
+4. `@CookieValue `
+
+   ```java
+   @RequestMapping("/test4")
+       public Map<String, Object> test4(
+               @CookieValue Cookie cookie
+       ) {
+           Map<String, Object> map = new HashMap<>();
+           map.put("cookie", cookie);
+           return map;
+       }
+   ```
+
+5. `@RequestBody`
+
+   ```java
+   // 获取请求体
+   @RequestMapping("/test5")
+       public Map<String, Object> test4(
+               @RequestBody String body
+       ) {
+           Map<String, Object> map = new HashMap<>();
+           map.put("body", body);
+           return map;
+       }
+   ```
+
+6. `@RequestAttribute`
+   获取 request 域中的值
 
 
 
@@ -694,232 +807,162 @@ html不直接支持`delete`和`put`请求，需要在内容中加上一个隐藏
 
 ### 3. 数据响应与内容协商
 
+#### 3.1 SpringMVC支持的返回值
 
+```java
+ModelAndView
+Model
+View
+ResponseEntity 
+ResponseBodyEmitter
+StreamingResponseBody
+HttpEntity
+HttpHeaders
+Callable
+DeferredResult
+ListenableFuture
+CompletionStage
+WebAsyncTask
+有 @ModelAttribute 且为对象类型的
+@ResponseBody 注解 ---> RequestResponseBodyMethodProcessor
+```
 
 
 
+#### 3.2 内容协商
 
+根据客户端接收能力不同，返回不同媒体类型的数据。
 
+> 只需要改变请求头中Accept字段。Http协议中规定的，告诉服务器本客户端可以接收的数据类型。
 
+默认是根据浏览器自己设置好的类型权重来展示的。
 
+如果想自己设置按照什么方式返回数据类型可以按照下面步骤：
 
+1. 导入相关的Maven依赖
 
+   ```xml
+   <!--导入xml请求处理-->
+   <dependency>
+       <groupId>com.fasterxml.jackson.dataformat</groupId>
+       <artifactId>jackson-dataformat-xml</artifactId>
+   </dependency>
+   ```
 
+2. 配置文件中开启根据参数方式的内容协商
 
+   ```yaml
+   spring:
+   	mvc:
+       	contentnegotiation:
+         		favor-parameter: true
+   ```
 
+3. 在url中加上一个参数`format`，他的值就是返回类型
 
+例子：
 
+```java
+url:http://localhost:8080/json1?format=xml
+返回值：
+<person>
+<id>1</id>
+<age>2</age>
+<a>a</a>
+<b>b</b>
+</person>
+    
+url：http://localhost:8080/json1?format=json
+返回值：{"id":1,"age":2,"a":"a","b":"b"}
+```
 
 
 
 
 
+### 4.thymeleaf
 
+#### 1. 基本语法
 
+##### 1. 表达式
 
+| 表达式名字 | 语法   | 用途                               |
+| ---------- | ------ | ---------------------------------- |
+| 变量取值   | ${...} | 获取请求域、session域、对象等值    |
+| 选择变量   | *{...} | 获取上下文对象值                   |
+| 消息       | #{...} | 获取国际化等值                     |
+| 链接       | @{...} | 生成链接                           |
+| 片段表达式 | ~{...} | jsp:include 作用，引入公共页面片段 |
 
 
 
+>文本值: 'one text' **,** 'Another one!',…数字: 0 , 34 , 3.0,12.3,…布尔值: true,false
+>
+>空值: null
+>
+>变量： one，two，.... 变量不能有空格
+>
+>字符串拼接: **+**
+>
+>变量替换: ==|The name is ${name}|== 
+>
+>运算符: +   -   *   /   %
+>
+>运算符:  and , or
+>
+>一元运算: ! , not 
+>
+>比较: > , < , >= , <= ( gt , lt , ge , le )等式: == , != ( eq , ne ) 
+>
+>If-then: (if) ? (then)
+>
+>If-then-else: (if) ? (then) : (else)
+>
+>Default: (value) ?: (defaultvalue) 
 
 
 
+#### 2. 设置属性值-th:attr
 
+在属性前面加上`th:`
 
 
 
+#### 3. 迭代
 
+```html
+<tr th:each="prod : ${prods}">
+        <td th:text="${prod.name}">Onions</td>
+        <td th:text="${prod.price}">2.41</td>
+        <td th:text="${prod.inStock}? #{true} : #{false}">yes</td>
+</tr>
+```
 
+```html
+<tr th:each="prod,iterStat : ${prods}" th:class="${iterStat.odd}? 'odd'">
+  <td th:text="${prod.name}">Onions</td>
+  <td th:text="${prod.price}">2.41</td>
+  <td th:text="${prod.inStock}? #{true} : #{false}">yes</td>
+</tr>
+```
 
 
 
 
 
+#### 4. 条件运算
 
+```html
+<a href="comments.html"
+th:href="@{/product/comments(prodId=${prod.id})}"
+th:if="${not #lists.isEmpty(prod.comments)}">view</a>
+```
 
 
 
+<font color="red">当返回的视图名称以forward:为前缀，转发</font>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### 4. 视图解析与模版引擎
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<font color="red">当返回的视图名称redirect:为前缀，重定向</font>
 
 
 
@@ -930,343 +973,12 @@ html不直接支持`delete`和`put`请求，需要在内容中加上一个隐藏
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ### 6. 文件上传
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ### 7. 异常处理
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1279,349 +991,11 @@ html不直接支持`delete`和`put`请求，需要在内容中加上一个隐藏
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ### 9. 嵌入式 Servlet 容器
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ### 10. 定制化开发
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

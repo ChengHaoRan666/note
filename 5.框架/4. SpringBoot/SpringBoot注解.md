@@ -46,3 +46,14 @@
 >
 >@ConfigurationProperties 在类上写
 
+> @RequestMapping
+>
+> @DeleteMapping
+>
+> @PutMapping
+>
+> @GetMapping
+>
+> @PostMapping
+>
+> 写在方法上，请求路径会映射到该方法，下面四个是对第一个的一层封装，method进行设置
