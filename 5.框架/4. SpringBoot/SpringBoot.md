@@ -479,7 +479,7 @@ person:
 
 #### 1.1 静态资源目录
 
-将静态文件（图片，html文件，css文件，js文件等）放在resources下的/`static` (or `/public` or `/resources` or `/META-INF/resources`目录下可以直接访问
+将静态文件（图片，html文件，css文件，js文件等）放在resources下的/`static` (或 `/public` 或 `/resources` 或 `/META-INF/resources`目录下可以直接访问
 
 ![image](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/image.7pae6fho2.webp)
 
@@ -504,7 +504,7 @@ spring:
         [ classpath:/haha/ ]
 ```
 
-注意：<font color="red">服务器默认的静态资源路径不是修改，而是追加在后面</font>
+注意：<font color="red">服务器默认的静态资源路径不是修改原有的，而是追加在后面</font>
 
 
 
@@ -516,131 +516,75 @@ SpringBoot会自动识别在静态资源路径下的index.html文件用于主页
 
 
 
-#### 1.3 静态资源配置原理
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ### 2. 请求参数处理
 
+#### 2.1 REST风格
+
+具体说，就是 HTTP 协议里面，四个表示操作方式的动词：GET、POST、PUT、DELETE。
+
+它们分别对应四种基本操作：
+
+- GET 用来获取资源
+- POST 用来新建资源
+- PUT 用来更新资源
+- DELETE 用来删除资源
+
+REST 风格提倡 URL 地址使用统一的风格设计，从前到后各个单词使用斜杠分开，不使用问号键值对方式携带请求参数，而是将要发送给服务器的数据作为 URL 地址的一部分，以保证整体风格的一致性。
+
+| 操作     | 传统方式         | REST风格                |
+| -------- | ---------------- | ----------------------- |
+| 查询操作 | getUserById?id=1 | user/1-->get请求方式    |
+| 保存操作 | saveUser         | user-->post请求方式     |
+| 删除操作 | deleteUser?id=1  | user/1-->delete请求方式 |
+| 更新操作 | updateUser       | user-->put请求方式      |
 
 
 
 
 
+在SpringBoot中要进行手动开启支持REST：
+
+```yaml
+spring:
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true
+```
+
+html不直接支持`delete`和`put`请求，需要在内容中加上一个隐藏域，name为`_method`，value为`delete`或`put`。并且`method`只能为`post`。
 
 
+
+示例：
+
+```html
+<form th:action="@{/indexTest}" method="post">
+    <!--隐藏域-->
+    <input type="hidden" name="_method" value="delete">
+    username： <input type="text" name="username">
+    password： <input type="text" name="password">
+    <input type="submit" name="提交">
+</form>
+```
+
+
+
+映射的java方法可以使用以下注解：
+
+> @RequestMapping(value = "indexTest", method = RequestMethod.DELETE)
+>
+> @DeleteMapping(value = "indexTest")
+>
+> @PutMapping(value = "indexTest")
+>
+> @GetMapping(value = "indexTest")
+>
+> @PostMapping(value = "indexTest")
+
+下面四个是对`@RequestMapping`进行封装，自己添加了`method`为什么值
 
 
 
