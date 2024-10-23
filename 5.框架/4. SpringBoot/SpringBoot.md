@@ -1026,7 +1026,7 @@ public class webConfig implements WebMvcConfigurer {
 
 
 
-### 6. 文件上传
+### 6. 文件上传与下载
 
 <font color="red">文件上传的`method`和`enctype`固定的，不可更改</font>
 
@@ -1090,6 +1090,15 @@ public String testUpload2(@RequestPart("filenames") MultipartFile[] files) throw
 ```
 
 
+>文件上传初始单个最大大小为1M，全部文件初始最大10M，如果超过需要重新配置
+
+```yaml
+spring:
+    servlet:
+      multipart:
+          max-file-size: 10MB #修改上传文件时单个文件大小
+          max-request-size: 100MB #修改上传文件时全部文件大小
+```
 
 
 
@@ -1097,6 +1106,46 @@ public String testUpload2(@RequestPart("filenames") MultipartFile[] files) throw
 
 
 ### 7. 异常处理
+
+#### 7.1 自定义异常页面
+
+在静态页面下创建`error`文件夹，会自动识别对应的错误页面，有精确的错误状态码页面就匹配精确，没有就找 4xx.html，5xx.html；如果都没有就触发白页
+
+![image](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/image.8ad99w9pl3.webp)
+
+
+
+
+
+#### 7.2 使用`@ControllerAdvice`注解
+
+```java
+@ControllerAdvice
+public class errorTest {
+    @ExceptionHandler(ArithmeticException.class)
+    public ResponseEntity<String> handleArithmeticException(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+    }
+}
+```
+
+
+
+也可以这样：
+
+```java
+@RestControllerAdvice
+public class errorTest {
+    @ExceptionHandler(ArithmeticException.class)
+    public String handleArithmeticException(Exception ex) {
+        return ex.toString();
+    }
+}
+```
+
+
+
+<font color="red">如果采用第二种方法会覆盖掉第一种方法，建议在开发时使用第二种方法便于查找异常，在应用中使用第一种方法，考虑客户体验</font>
 
 
 
