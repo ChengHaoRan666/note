@@ -15,6 +15,10 @@
 
 2. Spring Initailizr（项目初始化向导）
 
+3. 加入`@Slf4j`注解后可以通过`log.info(name={}，name)`方法将信息以日志方式打印输出
+
+
+
 
 
 #### 2. 添加 Maven 依赖
@@ -966,16 +970,128 @@ th:if="${not #lists.isEmpty(prod.comments)}">view</a>
 
 
 
-
 ### 5. 拦截器
 
+#### 5.1 实现拦截器
 
+拦截器需要实现`HandlerInterceptor`接口，`HandlerInterceptor`接口提供三个方法：
+
+> `preHandle`：控制器方法执行之前执行preHandle()，其boolean类型的返回值表示是否拦截或放行，返回true为放行，即调用控制器方法；返回false表示拦截，即不调用控制器方法
+
+> `postHandle`：控制器方法执行之后但页面还没有进行渲染时执行postHandle()
+
+> `afterComplation`：处理完视图和模型数据，渲染视图完毕之后执行
+
+```java
+@Override
+public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    return true; // 放行
+    return false;// 拦截
+}
+```
+
+<font color="red">拦截器不需要加入到spring中，在配置拦截器时会加入</font>
+
+
+
+
+
+#### 5.2 配置拦截器
+
+通过实现`WebMvcConfigurer`接口来配置拦截器：
+
+```java
+@Configuration
+public class webConfig implements WebMvcConfigurer {
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new HandlerInterceptorTest()) // 配置拦截器
+                .addPathPatterns("") // 配置拦截路径
+                .excludePathPatterns(""); // 配置放行路径
+    }
+}
+```
+
+> 注意`/**`是会将所有请求都拦截了，同时也会拦截静态资源，要注意给静态资源放行
+
+
+
+#### 原理：
+
+![image](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/image.5c0z6adria.png)
+
+挨个执行每个拦截器的`preHandle`方法，没有错误再执行目标方法，执行完目标方法后<font color="red">倒序</font>执行`postHandle`方法。进行页面渲染，渲染成功后再<font color="red">倒序</font>执行`afterCompletion`方法。期间一旦有某个方法出错就会立即调用该拦截器的`afterCompletion`方法，没有执行过`preHandle`方法的拦截器不必执行`afterCompletion`方法。
 
 
 
 
 
 ### 6. 文件上传
+
+<font color="red">文件上传的`method`和`enctype`固定的，不可更改</font>
+
+#### 6.1 单文件上传
+
+```html
+<form th:action="@{/testUpload1}" method="post" enctype="multipart/form-data">
+    <input type="file" name="filename"><br>
+    <input type="submit" value="单文件上传"><br>
+</form>
+```
+
+
+
+可以使用`@RequestPart("")`获取上传的文件，文件类型`MultipartFile`，通过`MultipartFile` 的方法获取文件参数（`getOriginalFilename`，`getSize`方法），保存到本地（`transferTo`方法）。
+
+```java
+// 单文件上传
+    @PostMapping("testUpload1")
+    public String testUpload1(@RequestPart("filename") MultipartFile file) throws IOException {
+      log.info("文件名{}，文件大小{}", file.getOriginalFilename(), file.getSize());
+        if (!file.isEmpty()) {
+         // 保存到服务器
+         file.transferTo(new File("D:\\single\\" + file.getOriginalFilename()));
+        }
+        return "success";
+    }
+```
+
+
+
+
+
+
+
+#### 6.2 多文件上传
+
+```html
+<form th:action="@{/testUpload2}" method="post" enctype="multipart/form-data">
+    <input type="file" name="filename" multiple><br>
+    <input type="submit" value="多文件上传"><br>
+</form>
+```
+
+> 加上==multiple==允许选中多个文件
+
+
+
+```java
+// 多文件上传
+@PostMapping("testUpload2")
+public String testUpload2(@RequestPart("filenames") MultipartFile[] files) throws IOException {
+    for (MultipartFile file : files) {
+      log.info("文件名{}，文件大小{}", file.getOriginalFilename(), file.getSize());
+        if (!file.isEmpty()) {
+         file.transferTo(new File("D:\\double\\" + file.getOriginalFilename()));
+        }
+    }
+    return "success";
+}
+```
+
+
+
+
 
 
 
