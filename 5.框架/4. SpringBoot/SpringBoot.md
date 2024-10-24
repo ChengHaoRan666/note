@@ -1216,14 +1216,58 @@ public class MyRegistConfig {
 
 ### 9. 嵌入式 Servlet 容器
 
+Springboot默认嵌入三种服务器：`Tomcat`, `Jetty`,  `Undertow`
+
+会根据导入的jar包选择服务器，默认导入的`org.springframework.boot`中`spring-boot-starter-tomcat`，所以在springboot的web项目中默认是tomcat服务器。
+
+可以取消导入tomcat的依赖，添加其他服务器的依赖，springboot会自动识别出服务器，自动切换。
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+    <exclusions>
+        <!--排除tomcat的依赖-->
+        <exclusion>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+
+<!--导入Undertow的依赖-->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-undertow</artifactId>
+    <version>3.3.4</version>
+</dependency>
+```
+
+
+
 
 
 ### 10. 定制化开发
+
+Web应用 编写一个配置类实现 WebMvcConfigurer 即可定制化web功能；+ @Bean给容器中再扩展一些组件。
+
 
 
 
 
 ## 六. 数据访问
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## 七. 单元测试
 
