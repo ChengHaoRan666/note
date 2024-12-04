@@ -10,7 +10,7 @@
 
 ### 十大数据类型：
 
-#### 1.1.1：字符串 String
+#### 1.1：字符串 String
 
 1. string是redis最基本的类型，一个key对应一个value
 2. string类型是二进制安全的，意思是redis的string可以包含任何数据，比如jpg图片或者序列化的对象 
@@ -18,7 +18,9 @@
 
 
 
-##### 1.1.2：字符串相关指令
+##### 字符串相关命令
+
+###### 1. set
 
 `set key value [NX|XX][GET][EX seconds|PX milliseconds|EXAT unix-time-seconds|PXAT unix=time-milliseconds|KEEPTTL]` 
 
@@ -31,25 +33,105 @@
 - `PXAT` *毫秒时间戳* —— 设置以毫秒为单位的UNIX时间戳所对应的时间为过期时间
 - `KEEPTTL`——保留当前key的生存时间，即使修改值也继承之前的生存时间
 
-
-
-```sql
-set key1 val2 nx ex 10
-```
-
-
-
 > System.currentTimeMillis()可以获取当前时间戳，单位毫秒
 
 
 
+###### 2. get
+
+`get key`
+
+获取key对应的 val
+
+
+
+###### 3. mset  msetnx
+
+`mset key value [key value]`
+
+同时设置多个key，value
+
+msetnx 要求所以key都不存在
+
+
+
+###### 4. mget
+
+`mget key1 [key2]`
+
+同时获取多个key对应的value
+
+
+
+###### 5. getrange    setrange
+
+`getrange key1 0 2` 
+
+获取key1 的值后进行截取得到最终结果，包含前面和后面
+
+`setrange key1 0 abc`
+
+从第0位开始（包括第0位），将他和他后面的相应的字符串替换为字符串（替换的字符串长度相同）
+
+
+
+###### 6. incr 
+
+> 只能数字才可以进行加减
+
+`incr key`
+
+将key的值加1
 
 
 
 
 
+###### 7. incrby
+
+`incrby key 7`
+
+将key的值加7
 
 
+
+###### 8. decr
+
+`decr number1`
+
+将number1的值减1
+
+
+
+###### 9. decrby
+
+`decrby number1 9`
+
+将number1的值减9
+
+
+
+###### 10. strlen
+
+`strlen key`
+
+获取key对应val的长度
+
+
+
+###### 11. append
+
+`append key value`
+
+将value追加到key后面
+
+
+
+###### 12. getset 
+
+`getset key val`
+
+先获取key的值，然后在修改
 
 
 
@@ -59,8 +141,102 @@ set key1 val2 nx ex 10
 
 #### 1.2：列表 List
 
+![image](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/image.1hs9bfbas7.webp)
+
 1. Redis列表是简单的字符串列表，按照插入顺序排序。你可以添加一个元素到列表的头部（左边）或者尾部（右边）
 2. 它的底层实际是个双端链表，最多可以包含 2^32 - 1 个元素 (4294967295, 每个列表超过40亿个元素)
+
+
+
+##### 列表相关命令：
+
+###### 1. lpush   rpush  lrange
+
+`lpush key list1 list2`
+
+从左边向key中添加元素
+
+`rpush key list11 list22`
+
+从右边向key中添加元素
+
+`lrange key 0 -1`
+
+从左边遍历key ，下标从0到-1（就是全部遍历）
+
+
+
+###### 2. lpop  rpop
+
+`lpop key`
+
+从左边弹出一个元素
+
+`rpop key`
+
+从右边弹出一个元素
+
+
+
+###### 3. lindex
+
+`lindex key 0`
+
+获取key的第0个元素
+
+
+
+###### 4. llen
+
+`llen key`
+
+获取key的元素个数
+
+
+
+###### 5. lrem
+
+`lrem key 数字n 数字v `
+
+删除n个值为v的元素
+
+
+
+###### 6. ltrim
+
+`ltrim key 开始index 结束index`
+
+截取指定范围的值在赋给key
+
+
+
+###### 7. rpoplpush
+
+`rpoplpush key key2`
+
+将key的列表从右边弹出一个，从左边加入key2里
+
+
+
+###### 8. lset
+
+`lset key 1 2`
+
+将下标为1的值改为2
+
+
+
+###### 9. linert
+
+`linsert key before 已有值 新的值`
+
+在已有值的左边插入新的值
+
+`linsert key after 已有值 新的值`
+
+在已有值的右边插入新的值
+
+
 
 
 
@@ -70,6 +246,75 @@ set key1 val2 nx ex 10
 
 1. Redis hash 是一个 string 类型的 field（字段） 和 value（值） 的映射表，hash 特别适合用于存储对象。
 2. Redis 中每个 hash 可以存储 2^32 - 1 键值对（40多亿）
+2. KV模式不变，但是V又是一个键值对
+
+
+
+##### 列表相关命令
+
+###### 1. hset  hget hmset hmget hgetall hdel
+
+`hset user:001 id 11 name z3 age 25`
+
+`hget user:001 id`
+
+`hmset user:001 id 12 name z1 age 25  id 13 name l1 age 28`
+
+`hmget user:001 id name age`
+
+`hgetall user:001`
+
+`hdel user:001 age`
+
+
+
+###### 2. hlen
+
+`hlen user:001`
+
+获取key的全部数量
+
+
+
+###### 3. hexists 
+
+`hexists user:001 id`
+
+判断在key中val在不在
+
+
+
+###### 4. hkeys hvals
+
+`hkeys user:001`
+
+hkeys 命令用于获取哈希表中的所有字段（key）的列表
+
+`hvals user:001`
+
+hvals 命令用于获取哈希表中的所有值（value）的列表
+
+
+
+###### 5. hincrby hincrbyfloat
+
+`hincrbyfloat user:001 id 2`
+
+hincrby 用于对整数增加数
+
+`hincrbyfloat user:001 id 2.1`
+
+hincrbyfloat 用于对浮点数增加数
+
+
+
+###### 6. hetnx
+
+`hsetnx user:001 id 20`
+
+先判断id在不在，不在进行插入，在不做处理
+
+
 
 
 
