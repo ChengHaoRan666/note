@@ -326,11 +326,103 @@ hincrbyfloat 用于对浮点数增加数
 
 
 
+##### 集合相关命令
+
+###### 1. smembers 
+
+`smembers key`
+
+遍历 key
+
+
+
+###### 2. sadd
+
+`sadd key 1 2 3 4`
+
+向集合中添加元素（自动去重）
+
+
+
+###### 3. sismember
+
+`sismember key 5`
+
+判断在key中元素5是否存在
+
+
+
+###### 4. srem
+
+`srem key 1`
+
+在key中删除元素1
+
+
+
+###### 5. scard
+
+`scard key`
+
+获取key集合中的元素个数
+
+
+
+###### 6. srandmember 
+
+`srandmember key1 4`
+
+随机展现key1中的4个数，不删除
+
+
+
+###### 7. spop
+
+`spop key 3`
+
+随机从集合中弹出3个数，删除
+
+
+
+###### 8.smove 
+
+`smove key1 key2 1`
+
+将key1中的1删除，然后将其加入到key2中
+
+
+
+###### 9. sdiff 
+
+`sdiff key1 key2`
+
+求两个集合的差值 Key1 - key2
+
+
+
+###### 10. sunion 
+
+`sunion key1 key2`
+
+求两个集合的并集运算
+
+
+
+###### 11. sinter 
+
+`sinter key1 key2`
+
+求两个集合的交集运算
 
 
 
 
-#### 1.5：有序结合 ZSet
+
+
+
+
+
+#### 1.5：有序集合 ZSet
 
 1. Redis zset 和 set 一样也是string类型元素的集合,且不允许重复的成员。
 2. 不同的是每个元素都会关联一个double类型的分数，redis正是通过分数来为集合中的成员进行从小到大的排序。
