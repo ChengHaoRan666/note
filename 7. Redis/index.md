@@ -1,6 +1,3 @@
-- [ ] 18_redis10大类型之hash 09:21
-- [ ] 19_redis10大类型之set 18:47
-- [ ] 20_redis10大类型之zset 16:18
 - [ ] 21_redis10大类型之bitmap 22:26
 - [ ] 22_redis10大类型之HyperLogLog 11:46
 - [ ] 23_redis10大类型之GEO 17:53
