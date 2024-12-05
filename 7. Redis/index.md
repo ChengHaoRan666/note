@@ -1,7 +1,6 @@
 - [ ] 24_redis10大类型之Stream-上集 16:06
 - [ ] 25_redis10大类型之Stream-中集 17:04
 - [ ] 26_redis10大类型之Stream-下集 16:12
-- [ ] 27_redis10大类型之bitfield 24:47
 
 
 
