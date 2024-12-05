@@ -148,7 +148,7 @@ msetnx 要求所以key都不存在
 
 
 
-##### 列表相关命令：
+##### 列表相关命令
 
 ###### 1. lpush   rpush  lrange
 
@@ -571,6 +571,76 @@ Redis GEO 主要用于存储地理位置信息，并对存储的信息进行操�
 
 根据用户给定的经纬度坐标来获取指定范围内的地理位置集合
 
+GEO是Zset的子类
+
+
+
+##### 地里空间相关命令
+
+###### 1. geoadd 
+
+`geoadd city 139.6917 35.6895 东京 -74.0060 40.7128 纽约`
+
+添加
+
+
+
+###### 2. geopos 
+
+`geopos city 东京`
+
+获取这个地方的经纬度坐标
+
+
+
+###### 3. geohash
+
+`geohash city 东京`
+
+获取这个地方的经纬度坐标的哈希值
+
+
+
+###### 4. geodist 
+
+`geodist city 东京 纽约 km`
+
+查看这两个地方的距离，单位km
+
+
+
+###### 5. georadius
+
+`georadius key longitude latitude radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count] [ASC|DESC] [STORE key] [STOREDIST key]`
+
+- `key`：地理空间索引的键名。
+- `longitude`：查询点的经度。
+- `latitude`：查询点的纬度。
+- `radius`：查询半径。
+- `m|km|ft|mi`：指定查询半径的单位，可以是米  千米  英尺（ft）或英里（mi）。
+
+
+
+- `WITHCOORD`：返回成员的位置坐标。
+- `WITHDIST`：返回成员与中心点之间的距离。
+- `WITHHASH`：返回成员的52位Geohash值。
+- `COUNT count`：指定返回结果的数量。
+- `ASC|DESC`：根据距离排序结果，`ASC` 表示从近到远，`DESC` 表示从远到近。
+- `STORE key`：将结果存储在指定的键中，而不是直接返回。
+- `STOREDIST key`：将结果以及与中心点的距离存储在指定的键中。
+
+
+
+###### 6. georadiusbymember
+
+`georadiusbymemberkey longitude latitude radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count] [ASC|DESC] [STORE key] [STOREDIST key]`
+
+和`georadiusbymember`功能相似，只不过不必输入经纬度两个值，而是输入地址即可
+
+
+
+
+
 
 
 #### 1.7：基数统计 HyperLogLog
@@ -578,6 +648,40 @@ Redis GEO 主要用于存储地理位置信息，并对存储的信息进行操�
 1. HyperLogLog 是用来做基数统计的算法，HyperLogLog 的优点是，在输入元素的数量或者体积非常非常大时，计算基数所需的空间总是固定且是很小的。
 2. 在 Redis 里面，每个 HyperLogLog 键只需要花费 12 KB 内存，就可以计算接近 2^64 个不同元素的基 数。这和计算基数时，元素越多耗费内存就越多的集合形成鲜明对比。
 3. 但是，因为 HyperLogLog 只会根据输入元素来计算基数，而不会储存输入元素本身，所以 HyperLogLog 不能像集合那样，返回输入的各个元素。
+
+> 就是统计去重后的个数
+
+
+
+##### 基数统计相关命令
+
+###### 1. pfadd 
+
+`pfadd key 1 2 3 4 5`
+
+添加指定元素到HyperLogLog中
+
+
+
+###### 2. pfcount 
+
+`pfcount key3`
+
+返回给定 HyperLogLog 的基数
+
+
+
+###### 3. pfmerge 
+
+`pfmerge key3 key1 key2...`
+
+将多个 HyperLogLog 合并为一个 HyperLogLog
+
+
+
+
+
+
 
 
 
@@ -589,6 +693,58 @@ Redis GEO 主要用于存储地理位置信息，并对存储的信息进行操�
 
 
 
+##### 位图相关命令
+
+###### 1. setbit
+
+`set key 0 1`
+
+将位图的第0位设置为1
+
+
+
+###### 2. getbit
+
+`getbit key 0`
+
+获取位图key的第0位
+
+
+
+###### 3. get
+
+`get key`
+
+获取这个位图的二进制序列，作为ASCII码转为字符格式
+
+
+
+###### 4. strlen
+
+`strlen key`
+
+获取key所占大小，字节为单位。就是存储了多少01再除以8得到字节
+
+
+
+###### 5.bitcount
+
+`bitcount key`
+
+获取全部键中 1 占的个数
+
+
+
+###### 6. bitop
+
+后面可以跟四种位操作：AND(按位与)、OR(按位或)、XOR(按位异或) 和 NOT(按位非)。
+
+`BITOP operation destkey key [key ...]`
+
+- operation：要执行的操作，可以是 AND、OR、XOR 或 NOT。
+- destkey：存储结果的新键的名称。
+- key [key ...]：一个或多个源键的名称，它们将被用于位操作。
+
 
 
 
@@ -599,6 +755,14 @@ Redis GEO 主要用于存储地理位置信息，并对存储的信息进行操�
 
 1. 通过bitfield命令可以一次性操作多个比特位域(指的是连续的多个比特位)，它会执行一系列操作并返回一个响应数组，这个数组中的元素对应参数列表中的相应操作的执行结果。
 2. 说白了就是通过bitfield命令我们可以一次性对多个比特位域进行操作。
+
+
+
+
+
+
+
+
 
 
 
