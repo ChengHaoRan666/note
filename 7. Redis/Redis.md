@@ -8,6 +8,40 @@
 
 
 
+
+
+### 对 `key`  的操作：
+
+> keys * 查看当前库所有的 key
+
+> exists key 判断某个 key 是否存在
+
+> type key 查看你的 key 是什么类型
+
+> del key 删除指定的 key 数据
+
+> unlink key 非阻塞删除，仅仅将keys从keyspace元数据中删除，真正的删除会在后续异步操作。
+
+> ttl key 查看还有多少秒过期，-1表示永不过期，2表示已过期
+
+> expire key 秒钟  为给定的key设置过期时间
+
+> move key dbindex【0-15】 将当前数据库的key移动到给定的数据库db当中
+
+> select dbindex 切换数据库【0-15】，默认为0
+
+> dbsize 查看当前数据库key的数量
+
+> flushdb 清空当前库
+
+> flushall 通杀全部库
+
+
+
+
+
+
+
 ### 十大数据类型：
 
 #### 1.1：字符串 String
@@ -760,12 +794,6 @@ GEO是Zset的子类
 
 
 
-
-
-
-
-
-
 #### 1.10：流 Stream
 
 1. Redis Stream 是 Redis 5.0 版本新增加的数据结构
@@ -775,35 +803,85 @@ GEO是Zset的子类
 
 
 
+##### stream基本操作
+
+###### 1.XADD 
+
+`XADD key nomkstream maxlen approximate_length] * | ID field value [field value ...]`
+
+- key：Stream 的名称。
+- [NOMKSTREAM]：可选参数，如果指定的 Stream 不存在，且使用了 NOMKSTREAM，则命令不会创建新的 Stream。
+- [MAXLEN approximate_length]：可选参数，用于限制 Stream 的最大长度。可以设置为固定长度或者使用  ~  前缀来指定一个近似长度。
+- *或 ID：用于指定新条目的 ID。使用 * 时，Redis 会自动生成一个唯一的 ID。如果你想要指定自己的 ID，可以替换 *，但通常不建议这样做，因为它可能会导致数据不一致。
+- field value：字段和值对，你可以添加多个字段-值对。
+
+> id 的值比较特殊：
+>
+> 1733560030213-0  前面的1733560030213表示时间戳，后面的0表示在这个时间戳内的第0条
 
 
 
+###### 2. xrange 
 
-### 对 `key`  的操作：
+`xrange key - + [count 1]`
 
-> keys * 查看当前库所有的 key
+- key：Stream 的名称
+- -：最小值id，可以换成具体id
+- +：最大值id，可以换成具体id
+- count 1：可选，限制输出条数
 
-> exists key 判断某个 key 是否存在
 
-> type key 查看你的 key 是什么类型
 
-> del key 删除指定的 key 数据
+###### 3. xrevrange 
 
-> unlink key 非阻塞删除，仅仅将keys从keyspace元数据中删除，真正的删除会在后续异步操作。
+`xrevrange key + - [count 2]`
 
-> ttl key 查看还有多少秒过期，-1表示永不过期，2表示已过期
+和xrange一样，但是顺序相反，从大到小
 
-> expire key 秒钟  为给定的key设置过期时间
 
-> move key dbindex【0-15】 将当前数据库的key移动到给定的数据库db当中
 
-> select dbindex 切换数据库【0-15】，默认为0
+###### 4. xdel 
 
-> dbsize 查看当前数据库key的数量
+`xdel key 1733561100257-0`
 
-> flushdb 清空当前库
+删除key这个Stream中id为1733561100257-0的消息
 
-> flushall 通杀全部库
+
+
+###### 5. xlen 
+
+`xlen key`
+
+获取key这个Stream中消息个数
+
+
+
+###### 6. XTRIM 
+
+`XTRIM key MAXLEN [~] 100`
+
+根据策略修建Stream
+
+- key：Stream的名字
+- maxlen：修建策略，maxlen表示按照数量修建
+- ~ 可选：表示大概修建，可能会有误差
+- 100：表示最大数量
+
+```shell
+// 保留 Stream 中最新的消息，直到总字节大小达到 1MB：
+XTRIM key MAXLEN BYTES 1048576
+```
+
+
+
+###### 7. xread
+
+`XREAD [COUNT count] [BLOCK milliseconds] STREAMS key [key ...] id [id ...]`
+
+- COUNT count：可选参数，指定返回的最大消息数量。
+- BLOCK milliseconds：可选参数，指定阻塞等待的时间（以毫秒为单位）。如果不指定，则 XREAD 为非阻塞模式。
+- STREAMS key [key ...]：指定要读取的 Stream 键名，可以同时指定多个 Stream。
+- id [id ...]：指定每个 Stream 的起始消息 ID。使用 `$` 表示从最后一个已知消息之后开始读取，或者指定具体的消息 ID。
 
 
 
