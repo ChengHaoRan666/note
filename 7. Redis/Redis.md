@@ -1173,19 +1173,49 @@ auto-aof-rewrite-min-size：指定AOF文件的最小大小，只有当AOF文件�
 
 ### 混合持久化：
 
+#### 开启混合持久化配置：
+
+```conf
+1515 # 是否开启AOF和RDB两种持久化方式混合
+1516 aof-use-rdb-preamble yes
+```
 
 
 
+#### 混合模式下数据加载流程：
 
+先判断是否存在AOF，如果存在，加载AOF，如果不存在AOF，判断是否存在RDB，存在加载，不存在失败。
 
+![混合模式加载流程](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/下载.syzx4gz5x.webp)
+
+<font color="red">推荐使用混合模式</font>
+
+<font color="red">混合模式前提是开启AOF</font>
+
+> RDB镜像做全量持久化，AOF做增量持久化
+>
+> 先使用RDB进行快照存储，然后使用AOF持久化记录所有的写操作，当重写策略满足或手动触发重写的时候，将最新的数据存储为新的RDB记录。这样的话，重启服务的时候会从RDB和AOF两部分恢复数据，既保证了数据完整性，又提高了恢复数据的性能。简单来说：混合持久化方式产生的文件一部分是RDB格式，一部分是AOF格式
 
 
 
 ### 纯缓存模式：
 
+同时关闭RDB和AOF
+
+```conf
+# 关闭RDB
+save ""
+# 关闭AOF
+appendonly no
+```
 
 
 
+>在禁用RDB持久化模式下，我们仍可以使用save，bgsave命令生成RDB文件
+
+>  在禁用AOF持久化模式下，我们仍可以使用bgrewriteaof命令生成AOF文件
+
+> 在纯缓存模式下，默认不读取RDB和AOF文件
 
 
 
