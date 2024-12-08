@@ -1074,20 +1074,6 @@ XTRIM key MAXLEN BYTES 1048576
 
 
 
-#### 检查修复：
-
-```conf
-./redis-check-aof --fix /opt/soft/redis-7.0.1/myredis/appendonlydir/appendonly.aof.1.incr.aof 
-```
-
-通过`redis-check-aof`命令检查AOF文件是否正确，通常只用检查incr文件即可
-
---fix 参数表示在检查后还会尝试修复，修复可能会出问题，建议备份
-
-
-
-
-
 #### 工作流程：
 
 1. 进行增删改查命令
@@ -1119,6 +1105,20 @@ XTRIM key MAXLEN BYTES 1048576
 操作系统控制的写回，每个写命令执行完，把日志写入AOF缓冲区中，由操作系统决定何时将缓冲区内容写入磁盘
 
 ![AOF写回策略](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/AOF写回策略.esk64ws0w.webp)
+
+
+
+#### 检查修复：
+
+```conf
+./redis-check-aof --fix /opt/soft/redis-7.0.1/myredis/appendonlydir/appendonly.aof.1.incr.aof 
+```
+
+通过`redis-check-aof`命令检查AOF文件是否正确，通常只用检查incr文件即可
+
+--fix 参数表示在检查后还会尝试修复，修复可能会出问题，建议备份
+
+
 
 
 
