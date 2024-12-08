@@ -900,7 +900,7 @@ XTRIM key MAXLEN BYTES 1048576
 #### 基础信息：
 
 - **工作原理**：快照。一种基于时间的数据快照，在指定的时间间隔内，redis会生成一个.rdb的快照文件，里面包含了数据库在那一时刻的所有文件。
-
+- **存储地点**：存储在`dump.rdb`文件里，文件位置和文件名字可以设置。
 - **触发方式**：可以通过配置定时自动执行，也可以通过SAVE或BGSAVE命令手动触发。
   - SAVE命令会阻塞Redis服务器进程，直到RDB文件被创建完毕。
   - BGSAVE命令会派生出一个子进程来创建RDB文件，而父进程继续处理命令，这减少了服务中断的时间。
@@ -1019,8 +1019,11 @@ XTRIM key MAXLEN BYTES 1048576
 
 ### AOF：
 
+#### 基础信息：
+
 - **工作原理**：每当执行一个改变数据集的命令时，这个命令就会被追加到AOF文件的末尾。重启时，Redis可以通过重新执行AOF文件中的所有写命令来恢复数据。
-- **触发方式**：AOF是默认开启的，并且通常是持续的。不过，可以通过配置设置同步频率。
+- **存储地点**：存储在`appendonly.aof`文件内。
+- **触发方式**：AOF是持续的。不过，可以通过配置设置同步频率。
 - **优点**：
   - 数据安全性更高，因为记录的是每条命令，即使发生故障，丢失的数据也相对较少。
   - 如果日志文件变得过大，Redis可以在后台重写日志，以减少文件大小。
@@ -1030,6 +1033,44 @@ XTRIM key MAXLEN BYTES 1048576
 
 
 
+#### 自己配置：
+
+1. 开启
+   AOF在redis7.0是默认关闭的`appendonly no` ，需要开启`appendonly yes`
+
+2. AOF文件名：
+
+   ```conf
+   1412 appendfilename "appendonly.aof"
+   ```
+
+3. 写回策略：
+
+   ```conf
+   1442 # 写回策略，默认everysec
+   1443 # appendfsync always
+   1444 appendfsync everysec
+   1445 # appendfsync no
+   ```
+
+4. AOF保存路径：
+   AOF的保存路径是由dir配置和appenddirname配置组成的，appenddirname文件夹放在dir里，aof文件放在appenddirname里。dir配置是在rdb时配置的。
+
+   ```conf
+   1418 appenddirname "appendonlydir" 
+   ```
+
+   
+
+> AOF文件在7.0之后有了变更，由 1 个文件变为三个文件
+>
+> 由三部分构成：
+>
+> - appendonly.aof.1.base.rdb   base基本文件，最多1个
+>
+> - appendonly.aof.1.incr.aof      incr增量文件，可以多个
+>
+> - appendonly.aof.manifest       manifest清单文件，会自动清除
 
 
 
@@ -1037,14 +1078,37 @@ XTRIM key MAXLEN BYTES 1048576
 
 
 
+#### 工作流程：
+
+1. 进行增删改查命令
+2. 对于其中的增删改命令，将这些命令放入AOF缓冲区中，在缓冲区中累计一定量的命令在存入aof文件中，目的是避免频繁的与磁盘进行IO操作
+3. AOF缓冲会根据AOF缓冲区同步文件的<font color="red">三种写回策略</font>将命令写入磁盘上的AOF文件。
+4. 随着写入AOF内容的增加为避免文件膨胀，会根据规则进行命令的合并(又称<font color="red">AOF重写</font>)，从而起到AOF文件压缩的目的。
+5. 当Redis Server 服务器重启的时候会从AOF文件载入数据。
 
 
 
+#### 写回策略：
+
+三种：always  everysec   no
+
+##### 1. always(redis 默认)
+
+同步回写，每写一次都回更新aof文件
 
 
 
+##### 2. everysec
+
+每秒写回
 
 
+
+##### 3. no
+
+操作系统控制的写回，每个写命令执行完，把日志写入AOF缓冲区中，由操作系统决定何时将缓冲区内容写入磁盘
+
+![AOF写回策略](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/AOF写回策略.esk64ws0w.webp)
 
 
 
