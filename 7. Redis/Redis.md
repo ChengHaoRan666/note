@@ -891,6 +891,173 @@ XTRIM key MAXLEN BYTES 1048576
 
 ## 2. redis 持久化
 
+两种方法实现持久化：RDB，AOF
+
+
+
+### RDB：
+
+#### 基础信息：
+
+- **工作原理**：快照。一种基于时间的数据快照，在指定的时间间隔内，redis会生成一个.rdb的快照文件，里面包含了数据库在那一时刻的所有文件。
+
+- **触发方式**：可以通过配置定时自动执行，也可以通过SAVE或BGSAVE命令手动触发。
+  - SAVE命令会阻塞Redis服务器进程，直到RDB文件被创建完毕。
+  - BGSAVE命令会派生出一个子进程来创建RDB文件，而父进程继续处理命令，这减少了服务中断的时间。
+- **优点**：
+  - 数据恢复速度快，因为只需载入一个单独的文件。
+  - 文件紧凑，占用空间小，便于传输。
+- **缺点**：
+  - 在两次快照之间如果发生故障，可能会导致数据丢失。
+  - 创建快照可能会对性能产生影响，尤其是大数据集。
+
+
+
+```conf
+ 在redis.conf配置文件中的默认配置（7.0版本）
+# Unless specified otherwise, by default Redis will save the DB:
+#   * After 3600 seconds (an hour) if at least 1 change was performed
+#   * After 300 seconds (5 minutes) if at least 100 changes were performed
+#   * After 60 seconds if at least 10000 changes were performed
+
+#除非另有说明，否则默认情况下Redis将保存数据库：
+#*3600秒（一小时）后，如果至少进行了一次更改
+#*300秒（5分钟）后，如果执行了至少100次更改
+#*60秒后，如果执行了至少10000次更改
+```
+
+
+
+#### 自己配置：
+
+配置保存条件：
+
+```conf
+442  # save 3600 1 300 100 60 10000
+443  # 下面使用自己的配置信息覆盖默认的配置,如果5秒钟2次修改就生成一个rdb文件
+444  save 5 2
+```
+
+配置rdb文件保存路径：
+
+```conf
+505 # Note that you must specify a directory here, not a file name.
+506 # dir ./
+507 # 设置保存的路径在当前文件夹下的dumpfiles文件夹下
+508 dir /opt/soft/redis-7.0.1/dumpfiles
+```
+
+配置rdb文件保存的名字：
+
+```conf
+482 # The filename where to dump the DB
+482 # 配置保存的rdb文件名字
+482 dbfilename MyDump.rdb
+```
+
+
+
+
+
+#### 触发条件：
+
+##### 自动触发：
+
+当满足配置文件中设置的保存条件时，redis会自动保存当前快照到指定位置
+
+> 执行 flushall 或 flushdb 命令也会生成一个rdb快照，但是无意义，里面是空的
+
+> 主从复制时，主节点也会自动触发
+
+> 执行shutdown命令且没有设置开启AOF持久化也会自动触发
+
+##### 手动触发：
+
+`save` `bgsave` 两个命令手动触发备份文件
+
+> save 会阻塞主进程，当使用 save 命令后，主进程的redis服务将暂停，不能处理其他命令
+>
+> bgsave 不会阻塞主进程，会在后台异步进行快照操作
+
+<font color="red">实际生产中只能使用`bgsave`</font>
+
+通过`lastsave`命令可以获取最后执行`bgsave`命令的时间戳
+
+
+
+
+
+#### 恢复流程：
+
+会自动识别dir配置的文件夹下的dump.rdb文件进行备份
+
+<font color="red">但是在关机时redis也会生产一个rdb文件，会覆盖掉有数据的那个备份，所有备份与生产要物理隔离</font>
+
+
+
+
+
+#### 检查修复：
+
+`./redis-check-rdb /opt/soft/redis-7.0.1/dumpfiles/MyDump.rdb `
+
+通过`redis-check-rdb`命令可以检查并修复rdb文件
+
+
+
+
+
+#### 禁用情况：
+
+在配置文件中写入 `save ""`即可禁用RDB 
+
+
+
+
+
+
+
+
+
+
+
+### AOF：
+
+- **工作原理**：每当执行一个改变数据集的命令时，这个命令就会被追加到AOF文件的末尾。重启时，Redis可以通过重新执行AOF文件中的所有写命令来恢复数据。
+- **触发方式**：AOF是默认开启的，并且通常是持续的。不过，可以通过配置设置同步频率。
+- **优点**：
+  - 数据安全性更高，因为记录的是每条命令，即使发生故障，丢失的数据也相对较少。
+  - 如果日志文件变得过大，Redis可以在后台重写日志，以减少文件大小。
+- **缺点**：
+  - 相比RDB，AOF文件通常更大，数据恢复可能更慢。
+  - 在高负载下，AOF可能会比RDB慢。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## 3. redis 事务
