@@ -1290,22 +1290,60 @@ appendonly no
 
 ## 4. redis管道
 
+管道(pipeline)可以一次性发送多条命令给服务端，服务端依次处理完完毕后，通过一条响应一次性将结果返回，通过减少客户端与redis的通信次数来实现降低往返延时时间。pipeline实现的原理是队列，先进先出特性就保证数据的顺序性。
+
+管道是为了优化频繁命令往返造成的等待时间，是将命令一次发送完成，对其他不造成影响
+
+类似于redis原生的命令`mget`，`mset`
+
+```shell
+root@iZbp16jrgpn579tczps0e4Z:/home/text# cat cmd.txt | /opt/soft/redis-7.0.1/src/redis-cli -a 123456 --pipe
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+All data transferred. Waiting for the last reply...
+Last reply received from server.
+errors: 0, replies: 5
+```
+
+在linux里创建一个文件夹，里面放着redis命令，通过管道方式`--pipe`传入redis里执行。
 
 
-## 5. redis发布订阅
+
+#### pipeline与原生批量命令对比：
+
+1. <font color="red">原生批量命令是原子性，pipeline是非原子的</font>
+2. 原生批量命令一次执行一种命令，pipeline支持批量执行不同的命令
+3. 原子批命令是服务端实现的，pipeline需要服务端与客户端共同完成
 
 
 
-## 6. 主从复制
+#### pipeline与事务命令对比：
+
+1. 事务具有原子性，管道不具有原子性
+2. 管道一次性会将多条命令发送到服务器的，事务是一条一条发送，只在收到exec命令后才会执行
 
 
 
-## 7. 哨兵监控
+#### pipeline注意事项：
+
+1. pipeline缓冲的指令只是会依次执行，不保证原子性，如果执行中指令发生异常，将会继续执行后续的指令
+2. 使用pipeline组装的命令个数不能太多，不然数据量过大客户端阻塞的时间可能过久，同时服务端此时也被回复一个队列答复，占用很多内存
 
 
 
-## 8. 集群分片
 
 
 
-## 9. SpringBoot整合redis
+
+## 5. 主从复制
+
+
+
+## 6. 哨兵监控
+
+
+
+## 7. 集群分片
+
+
+
+## 8. SpringBoot整合redis
