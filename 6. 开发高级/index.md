@@ -6,8 +6,6 @@ springcloud黑马  12h
 
 rabbitMQ  6.5h
 
-kafka介绍   5min
-
 redis  5天
 
 
