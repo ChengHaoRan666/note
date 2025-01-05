@@ -1336,9 +1336,49 @@ errors: 0, replies: 5
 
 ## 5. 主从复制
 
+实现多台机器redis的同步，主redis以写为主，从redis以读为主。从redis可以有多台。
+
+#### 1. 能干什么：
+
+1. 读写分离
+2. 容灾恢复
+3. 数据备份
+4. 水平扩容支撑高并发
 
 
 
+#### 2. 配置方式：
+
+<font color="red">配置从redis库不配主redis库</font>
+
+master如果配置了requirepass参数，需要密码登录，那么slave就要配置masterauth来设置校验密码，否则master会拒绝slave的访问。
+
+
+
+#### 3.操作命令：
+
+1. info replication  可以查看复制节点的主从关系和配置信息
+2. replicaof 主库IP  主库端口（一般写入redis.conf配置文件中）
+3. slaveof  主库IP 主库端口（命令方式配置主库，每次与master断开后，都需要执行重新连接，除非写入redis.conf配置文件中。在运行期间修改slave节点的信息，如果该数据库已经是某个主数据库的从数据库，那么会停止和原主数据库的同步关系转而和新数据库同步。）
+4. slaveof  no one  使当前数据库停止与其他数据库的同步，转为主数据库
+
+
+
+
+
+#### 4. 配置实例：
+
+1. 开启daemonize yes（开启进程守护，当终端关闭时redis也在运行）
+2. 注释bind 127.0.0.1（允许其他ip连接）
+3. protected-mode no（关闭保护模式，允许外部链接）
+4. 指定端口
+5. 指定当前工作目录，dir（设置Redis的工作目录，用于保存日志文件、持久化文件（RDB和AOF文件）以及pid文件）
+6. pid文件名字，pidfile
+7. log文件名字，logfile
+8. requirepass（设置连接Redis服务器时需要提供的密码）
+9. dump.rdb名字（指定Redis的RDB持久化文件的名称。RDB文件用于在指定的时间间隔内保存数据快照）
+10. aof文件，appendfilename（指定Redis的AOF（Append Only File）持久化文件的名称）
+11. <font color="red">从机访问主机的通行密码masterauth，必须</font>
 
 
 
