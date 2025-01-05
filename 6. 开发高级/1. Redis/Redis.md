@@ -1374,11 +1374,21 @@ master如果配置了requirepass参数，需要密码登录，那么slave就要�
 4. 指定端口
 5. 指定当前工作目录，dir（设置Redis的工作目录，用于保存日志文件、持久化文件（RDB和AOF文件）以及pid文件）
 6. pid文件名字，pidfile
-7. log文件名字，logfile
+7. log文件名字，logfile（日志文件地址）
 8. requirepass（设置连接Redis服务器时需要提供的密码）
 9. dump.rdb名字（指定Redis的RDB持久化文件的名称。RDB文件用于在指定的时间间隔内保存数据快照）
 10. aof文件，appendfilename（指定Redis的AOF（Append Only File）持久化文件的名称）
 11. <font color="red">从机访问主机的通行密码masterauth，必须</font>
+
+
+
+#### 5. 复制原理和工作流程：
+
+
+
+
+
+
 
 
 
