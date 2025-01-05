@@ -1336,7 +1336,9 @@ errors: 0, replies: 5
 
 ## 5. 主从复制
 
-实现多台机器redis的同步，主redis以写为主，从redis以读为主。从redis可以有多台。
+> 实现多台机器redis的同步，主redis以写为主，从redis以读为主。从redis可以有多台。
+
+
 
 #### 1. 能干什么：
 
@@ -1401,6 +1403,17 @@ master如果配置了requirepass参数，需要密码登录，那么slave就要�
 执行第四步的配置实例后，在从节点上命令行配置 slaveof  主库IP 主库端口。
 
 使用命令方式手动指定重启后主从关系就不存在了。
+
+
+
+<font color="red">常见问题：</font>
+
+1. <font color="red">只能在主节点进行写操作，从节点只可以读操作</font>
+2. <font color="red">主机shutdown后，从机不会上位，数据保留</font>
+3. <font color="red">主机shutdown后，重启后主从关系还在，还可以顺利复制</font>
+4. <font color="red">从机shutdown后，主机还在继续，从机重启后还可以跟上主机</font>
+
+
 
 
 
