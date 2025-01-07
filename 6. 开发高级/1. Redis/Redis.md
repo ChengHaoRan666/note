@@ -1419,6 +1419,8 @@ master如果配置了requirepass参数，需要密码登录，那么slave就要�
 
 上一个slave从节点可以是下一个slave从节点的master主节点，slave同样可以接受其他slaves的链接和同步请求，那么该slave作为链条中的下一个master，可以有效减轻主master的写压力。
 
+> 中间的转移节点同样不能进行写操作，只是更改了同步的方向，减轻主master的压力。
+
 
 
 
