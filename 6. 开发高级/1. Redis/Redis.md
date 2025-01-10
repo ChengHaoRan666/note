@@ -1,4 +1,4 @@
-## 1. Redis十大数据类型
+## 	1. Redis十大数据类型
 
 ![redis类型](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/redis类型.8adawc2ojw.webp)
 
@@ -1455,6 +1455,12 @@ master如果配置了requirepass参数，需要密码登录，那么slave就要�
 
 
 ## 6. 哨兵监控
+
+在主从复制方式中，存在一个问题：如果主库出现问题挂了，那么从库不会自动切换，哨兵机制可以有效的解决这个问题。
+
+
+
+
 
 
 
