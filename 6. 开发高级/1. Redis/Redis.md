@@ -1092,13 +1092,9 @@ XTRIM key MAXLEN BYTES 1048576
 
 同步回写，每写一次都回更新aof文件
 
-
-
 ##### 2. everysec(redis 默认)
 
 每秒写回
-
-
 
 ##### 3. no
 
@@ -1177,7 +1173,7 @@ auto-aof-rewrite-min-size：指定AOF文件的最小大小，只有当AOF文件�
 
 ```conf
 1515 # 是否开启AOF和RDB两种持久化方式混合
-1516 aof-use-rdb-preamble yes
+    1516 aof-use-rdb-preamble yes
 ```
 
 
@@ -1475,7 +1471,7 @@ master如果配置了requirepass参数，需要密码登录，那么slave就要�
 
 #### 配置方式：
 
-> 采用三个哨兵，一主二从架构
+> 采用三个哨兵，一主二从架构。六台机器
 
 基本配置：
 
