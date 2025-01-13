@@ -17,8 +17,6 @@
 # bind 127.0.0.1 -::1
 
 
-
-
 # 配置发起出站连接时的ip地址
 # bind-source-addr 10.0.0.1
 
@@ -155,7 +153,7 @@ set-proc-title yes
 proc-title-template "{title} {listen-addr} {server-mode}"
 
 
-################################ 持久化配置 RDB ################################
+################################ 持久化配置 RDB（默认） ################################
 # 禁用RDB持久化
 # save ""
 # 默认情况：3600s进行1次修改 或 300s进行100次修改 或 60s 进行10000次修改
@@ -189,7 +187,7 @@ rdb-del-sync-files no
 dir /opt/soft/redis-7.0.1/dumpfiles
 
 
-################################# REPLICATION 主从复制 #################################
+################################# 主从复制 哨兵机制 #################################
 
 # 主从复制时从节点配置主节点IP和端口号
 # replicaof <masterIp> <masterPort>
@@ -232,13 +230,13 @@ replica-read-only yes
 # 无磁盘复制（Diskless）：
 # 主节点创建一个新进程，该进程直接将RDB文件写入到副本节点的套接字，完全不接触磁盘。
 # 一旦传输开始，新到达的副本节点将被排队，当前传输结束后将开始新的传输。
-# 当使用无磁盘复制时，主节点会在开始传输前等待一个可配置的时间（以秒为单位），希望有多个副本节点到达，以便可以并行化传输。
+# 当使用无磁盘复制时，主节点会在开始传输前等待一个可配置的时间（以秒为单位），希望有多个从节点到达，以便可以并行化传输。
 # 
 # repl-diskless-sync：这个配置指令用于指定是否使用无磁盘复制策略。如果设置为yes，则启用无磁盘复制（网络）；如果设置为no，则使用磁盘支持的复制。
 repl-diskless-sync yes
 
 
-# 在启用无磁盘复制时，服务器在启动子进程通过套接字将RDB文件传输到副本之前等待的时间，默认5s
+# 在启用无磁盘复制时，服务器在启动子进程通过套接字将RDB文件传输到从节点之前等待的时间，默认5s
 repl-diskless-sync-delay 5
 
 
@@ -250,7 +248,7 @@ repl-diskless-sync-max-replicas 0
 # 从节点在从主节点接收RDB文件时（无论是磁盘传输还是网络传输），是否直接从网络套接字加载RDB，还是先将其存储到磁盘上
 # "disabled"：不使用无磁盘加载（先将rdb文件存储到磁盘）
 # "on-empty-db"：仅在完全安全的情况下使用无磁盘加载
-# "swapdb"：在直接从网络解析数据的同时，将当前数据库内容保留在内存中。在这种模式下，副本可以在复制过程中继续服务当前数据集，除非它们无法识别主节点具有相同复制历史的数据集。
+# "swapdb"：在直接从网络解析数据的同时，将当前数据库内容保留在内存中。在这种模式下，从节点可以在复制过程中继续服务当前数据集，除非它们无法识别主节点具有相同复制历史的数据集。
 repl-diskless-load disabled
 
 
@@ -287,736 +285,235 @@ repl-disable-tcp-nodelay no
 # 设置从节点优先级数，用于在主节点挂时，低优先级数有利于提升为主节点
 replica-priority 100
 
-# The propagation error behavior controls how Redis will behave when it is
-# unable to handle a command being processed in the replication stream from a master
-# or processed while reading from an AOF file. Errors that occur during propagation
-# are unexpected, and can cause data inconsistency. However, there are edge cases
-# in earlier versions of Redis where it was possible for the server to replicate or persist
-# commands that would fail on future versions. For this reason the default behavior
-# is to ignore such errors and continue processing commands.
-#
-# If an application wants to ensure there is no data divergence, this configuration
-# should be set to 'panic' instead. The value can also be set to 'panic-on-replicas'
-# to only panic when a replica encounters an error on the replication stream. One of
-# these two panic values will become the default value in the future once there are
-# sufficient safety mechanisms in place to prevent false positive crashes.
-#
+# 在主从复制或AOF文件恢复时出现错误的处理方式
+# ignore：这是默认设置。如果设置为ignore，Redis在遇到无法在复制流中处理或从AOF文件中读取的命令时，将会忽略这些错误，并继续处理后续的命令。这样做的原因是，在Redis的早期版本中存在一些边缘情况，服务器可能会复制或持久化那些在未来版本中会失败的命令。忽略这些错误可以防止数据不一致，但可能会造成数据分歧。
+# panic：如果设置为panic，Redis在遇到传播错误时将会停止所有操作。这可以确保不会出现数据分歧，因为服务器会在检测到潜在的数据一致性问题时代码直接崩溃。
+# panic-on-replicas：如果设置为panic-on-replicas，则只有当从节点（replica）在复制流中遇到错误时，Redis服务器才会停止操作。主节点（master）在遇到相同的错误时不会停止。
 # propagation-error-behavior ignore
 
-# Replica ignore disk write errors controls the behavior of a replica when it is
-# unable to persist a write command received from its master to disk. By default,
-# this configuration is set to 'no' and will crash the replica in this condition.
-# It is not recommended to change this default, however in order to be compatible
-# with older versions of Redis this config can be toggled to 'yes' which will just
-# log a warning and execute the write command it got from the master.
-#
+
+
+# 从节点在无法将来自主节点的写命令持久化到磁盘时的处理方式
+# no：这是默认设置。如果设置为no，当从节点无法将主节点的写命令持久化到磁盘时，从节点将崩溃。这是推荐的行为，因为它可以防止数据丢失或不一致。
+# yes：如果设置为yes，当从节点遇到磁盘写入错误时，它将不会崩溃，而是记录一个警告日志，并继续执行从主节点接收到的写命令。这种行为与Redis的早期版本兼容，但它可能会导致数据丢失，因为即使写入失败，从节点也会继续处理后续的命令。
 # replica-ignore-disk-write-errors no
 
-# -----------------------------------------------------------------------------
-# By default, Redis Sentinel includes all replicas in its reports. A replica
-# can be excluded from Redis Sentinel's announcements. An unannounced replica
-# will be ignored by the 'sentinel replicas <master>' command and won't be
-# exposed to Redis Sentinel's clients.
-#
-# This option does not change the behavior of replica-priority. Even with
-# replica-announced set to 'no', the replica can be promoted to master. To
-# prevent this behavior, set replica-priority to 0.
-#
+# Redis 哨兵如何处理主从复制的公告
+# yes：这是默认设置。如果设置为yes，哨兵会包括所有从节点在其公告中。这意味着所有从节点都会被sentinel replicas <master>命令报告，并且会被哨兵的客户端看到。
+# no：如果设置为no，相应的从节点将不会出现在哨兵的公告中。这样的从节点将被sentinel replicas <master>命令忽略，并且不会被哨兵的客户端发现。
 # replica-announced yes
 
-# It is possible for a master to stop accepting writes if there are less than
-# N replicas connected, having a lag less or equal than M seconds.
-#
-# The N replicas need to be in "online" state.
-#
-# The lag in seconds, that must be <= the specified value, is calculated from
-# the last ping received from the replica, that is usually sent every second.
-#
-# This option does not GUARANTEE that N replicas will accept the write, but
-# will limit the window of exposure for lost writes in case not enough replicas
-# are available, to the specified number of seconds.
-#
-# For example to require at least 3 replicas with a lag <= 10 seconds use:
-#
-# min-replicas-to-write 3
-# min-replicas-max-lag 10
-#
-# Setting one or the other to 0 disables the feature.
-#
-# By default min-replicas-to-write is set to 0 (feature disabled) and
-# min-replicas-max-lag is set to 10.
 
-# A Redis master is able to list the address and port of the attached
-# replicas in different ways. For example the "INFO replication" section
-# offers this information, which is used, among other tools, by
-# Redis Sentinel in order to discover replica instances.
-# Another place where this info is available is in the output of the
-# "ROLE" command of a master.
-#
-# The listed IP address and port normally reported by a replica is
-# obtained in the following way:
-#
-#   IP: The address is auto detected by checking the peer address
-#   of the socket used by the replica to connect with the master.
-#
-#   Port: The port is communicated by the replica during the replication
-#   handshake, and is normally the port that the replica is using to
-#   listen for connections.
-#
-# However when port forwarding or Network Address Translation (NAT) is
-# used, the replica may actually be reachable via different IP and port
-# pairs. The following two options can be used by a replica in order to
-# report to its master a specific set of IP and port, so that both INFO
-# and ROLE will report those values.
-#
-# There is no need to use both the options if you need to override just
-# the port or the IP address.
-#
+# 配置主节点在特定条件下停止接受写操作，默认设置0个节点连接，不超过10s就继续接收写操作
+# 定义了至少需要多少个从节点连接到主节点，并且这些副本的延迟时间不超过指定的秒数，主节点才会继续接受写操作
+# min-replicas-to-write 3
+# 定义了副本的最大延迟时间（以秒为单位），超过这个时间，副本就不会被认为是有效的，用于满足min-replicas-to-write的要求
+# min-replicas-max-lag 10
+
+
+
+
+# 配置从节点报告给主节点ip地址和端口号的信息，在NAT和端口转发情况下有用途
 # replica-announce-ip 5.5.5.5
 # replica-announce-port 1234
 
-############################### KEYS TRACKING  密钥跟踪#################################
 
-# Redis implements server assisted support for client side caching of values.
-# This is implemented using an invalidation table that remembers, using
-# a radix key indexed by key name, what clients have which keys. In turn
-# this is used in order to send invalidation messages to clients. Please
-# check this page to understand more about the feature:
-#
-#   https://redis.io/topics/client-side-caching
-#
-# When tracking is enabled for a client, all the read only queries are assumed
-# to be cached: this will force Redis to store information in the invalidation
-# table. When keys are modified, such information is flushed away, and
-# invalidation messages are sent to the clients. However if the workload is
-# heavily dominated by reads, Redis could use more and more memory in order
-# to track the keys fetched by many clients.
-#
-# For this reason it is possible to configure a maximum fill value for the
-# invalidation table. By default it is set to 1M of keys, and once this limit
-# is reached, Redis will start to evict keys in the invalidation table
-# even if they were not modified, just to reclaim memory: this will in turn
-# force the clients to invalidate the cached values. Basically the table
-# maximum size is a trade off between the memory you want to spend server
-# side to track information about who cached what, and the ability of clients
-# to retain cached objects in memory.
-#
-# If you set the value to 0, it means there are no limits, and Redis will
-# retain as many keys as needed in the invalidation table.
-# In the "stats" INFO section, you can find information about the number of
-# keys in the invalidation table at every given moment.
-#
-# Note: when key tracking is used in broadcasting mode, no memory is used
-# in the server side so this setting is useless.
-#
+############################### 客户端缓存值 #################################
+# 客户端缓存支持功能，它允许服务器帮助客户端缓存值，并在这些值在服务器端被修改时发送无效消息给客户端
+# 定义客户端容纳最大键数
 # tracking-table-max-keys 1000000
 
-################################## SECURITY  安全 ###################################
 
-# Warning: since Redis is pretty fast, an outside user can try up to
-# 1 million passwords per second against a modern box. This means that you
-# should use very strong passwords, otherwise they will be very easy to break.
-# Note that because the password is really a shared secret between the client
-# and the server, and should not be memorized by any human, the password
-# can be easily a long string from /dev/urandom or whatever, so by using a
-# long and unguessable password no brute force attack will be possible.
 
-# Redis ACL users are defined in the following format:
-#
-#   user <username> ... acl rules ...
-#
-# For example:
-#
-#   user worker +@list +@connection ~jobs:* on >ffa9203c493aa99
-#
-# The special username "default" is used for new connections. If this user
-# has the "nopass" rule, then new connections will be immediately authenticated
-# as the "default" user without the need of any password provided via the
-# AUTH command. Otherwise if the "default" user is not flagged with "nopass"
-# the connections will start in not authenticated state, and will require
-# AUTH (or the HELLO command AUTH option) in order to be authenticated and
-# start to work.
-#
-# The ACL rules that describe what a user can do are the following:
-#
-#  on           Enable the user: it is possible to authenticate as this user.
-#  off          Disable the user: it's no longer possible to authenticate
-#               with this user, however the already authenticated connections
-#               will still work.
-#  skip-sanitize-payload    RESTORE dump-payload sanitization is skipped.
-#  sanitize-payload         RESTORE dump-payload is sanitized (default).
-#  +<command>   Allow the execution of that command.
-#               May be used with `|` for allowing subcommands (e.g "+config|get")
-#  -<command>   Disallow the execution of that command.
-#               May be used with `|` for blocking subcommands (e.g "-config|set")
-#  +@<category> Allow the execution of all the commands in such category
-#               with valid categories are like @admin, @set, @sortedset, ...
-#               and so forth, see the full list in the server.c file where
-#               the Redis command table is described and defined.
-#               The special category @all means all the commands, but currently
-#               present in the server, and that will be loaded in the future
-#               via modules.
-#  +<command>|first-arg  Allow a specific first argument of an otherwise
-#                        disabled command. It is only supported on commands with
-#                        no sub-commands, and is not allowed as negative form
-#                        like -SELECT|1, only additive starting with "+". This
-#                        feature is deprecated and may be removed in the future.
-#  allcommands  Alias for +@all. Note that it implies the ability to execute
-#               all the future commands loaded via the modules system.
-#  nocommands   Alias for -@all.
-#  ~<pattern>   Add a pattern of keys that can be mentioned as part of
-#               commands. For instance ~* allows all the keys. The pattern
-#               is a glob-style pattern like the one of KEYS.
-#               It is possible to specify multiple patterns.
-# %R~<pattern>  Add key read pattern that specifies which keys can be read 
-#               from.
-# %W~<pattern>  Add key write pattern that specifies which keys can be
-#               written to. 
-#  allkeys      Alias for ~*
-#  resetkeys    Flush the list of allowed keys patterns.
-#  &<pattern>   Add a glob-style pattern of Pub/Sub channels that can be
-#               accessed by the user. It is possible to specify multiple channel
-#               patterns.
-#  allchannels  Alias for &*
-#  resetchannels            Flush the list of allowed channel patterns.
-#  ><password>  Add this password to the list of valid password for the user.
-#               For example >mypass will add "mypass" to the list.
-#               This directive clears the "nopass" flag (see later).
-#  <<password>  Remove this password from the list of valid passwords.
-#  nopass       All the set passwords of the user are removed, and the user
-#               is flagged as requiring no password: it means that every
-#               password will work against this user. If this directive is
-#               used for the default user, every new connection will be
-#               immediately authenticated with the default user without
-#               any explicit AUTH command required. Note that the "resetpass"
-#               directive will clear this condition.
-#  resetpass    Flush the list of allowed passwords. Moreover removes the
-#               "nopass" status. After "resetpass" the user has no associated
-#               passwords and there is no way to authenticate without adding
-#               some password (or setting it as "nopass" later).
-#  reset        Performs the following actions: resetpass, resetkeys, off,
-#               -@all. The user returns to the same state it has immediately
-#               after its creation.
-# (<options>)   Create a new selector with the options specified within the
-#               parentheses and attach it to the user. Each option should be 
-#               space separated. The first character must be ( and the last 
-#               character must be ).
-# clearselectors            Remove all of the currently attached selectors. 
-#                           Note this does not change the "root" user permissions,
-#                           which are the permissions directly applied onto the
-#                           user (outside the parentheses).
-#
-# ACL rules can be specified in any order: for instance you can start with
-# passwords, then flags, or key patterns. However note that the additive
-# and subtractive rules will CHANGE MEANING depending on the ordering.
-# For instance see the following example:
-#
-#   user alice on +@all -DEBUG ~* >somepassword
-#
-# This will allow "alice" to use all the commands with the exception of the
-# DEBUG command, since +@all added all the commands to the set of the commands
-# alice can use, and later DEBUG was removed. However if we invert the order
-# of two ACL rules the result will be different:
-#
-#   user alice on -DEBUG +@all ~* >somepassword
-#
-# Now DEBUG was removed when alice had yet no commands in the set of allowed
-# commands, later all the commands are added, so the user will be able to
-# execute everything.
-#
-# Basically ACL rules are processed left-to-right.
-#
-# The following is a list of command categories and their meanings:
-# * keyspace - Writing or reading from keys, databases, or their metadata 
-#     in a type agnostic way. Includes DEL, RESTORE, DUMP, RENAME, EXISTS, DBSIZE,
-#     KEYS, EXPIRE, TTL, FLUSHALL, etc. Commands that may modify the keyspace,
-#     key or metadata will also have `write` category. Commands that only read
-#     the keyspace, key or metadata will have the `read` category.
-# * read - Reading from keys (values or metadata). Note that commands that don't
-#     interact with keys, will not have either `read` or `write`.
-# * write - Writing to keys (values or metadata)
-# * admin - Administrative commands. Normal applications will never need to use
-#     these. Includes REPLICAOF, CONFIG, DEBUG, SAVE, MONITOR, ACL, SHUTDOWN, etc.
-# * dangerous - Potentially dangerous (each should be considered with care for
-#     various reasons). This includes FLUSHALL, MIGRATE, RESTORE, SORT, KEYS,
-#     CLIENT, DEBUG, INFO, CONFIG, SAVE, REPLICAOF, etc.
-# * connection - Commands affecting the connection or other connections.
-#     This includes AUTH, SELECT, COMMAND, CLIENT, ECHO, PING, etc.
-# * blocking - Potentially blocking the connection until released by another
-#     command.
-# * fast - Fast O(1) commands. May loop on the number of arguments, but not the
-#     number of elements in the key.
-# * slow - All commands that are not Fast.
-# * pubsub - PUBLISH / SUBSCRIBE related
-# * transaction - WATCH / MULTI / EXEC related commands.
-# * scripting - Scripting related.
-# * set - Data type: sets related.
-# * sortedset - Data type: zsets related.
-# * list - Data type: lists related.
-# * hash - Data type: hashes related.
-# * string - Data type: strings related.
-# * bitmap - Data type: bitmaps related.
-# * hyperloglog - Data type: hyperloglog related.
-# * geo - Data type: geo related.
-# * stream - Data type: streams related.
-#
-# For more information about ACL configuration please refer to
-# the Redis web site at https://redis.io/topics/acl
 
-# ACL LOG
-#
-# The ACL Log tracks failed commands and authentication events associated
-# with ACLs. The ACL Log is useful to troubleshoot failed commands blocked
-# by ACLs. The ACL Log is stored in memory. You can reclaim memory with
-# ACL LOG RESET. Define the maximum entry length of the ACL Log below.
+################################## 安全 ACLs访问控制列表的设置 ###################################
+# 详情访问：https://redis.io/topics/acl
+# 格式： user <username> ... acl rules ...
+# 示例：user worker +@list +@connection ~jobs:* on >ffa9203c493aa99
+# 启用或禁用用户（on/off）
+# 允许或禁止执行特定命令（+<command>/-<command>）
+# 允许或禁止执行命令类别（+@<category>/-@<category>）
+# 设置可以访问的键的模式（~<pattern>）
+# 设置可以读取或写入的键的模式（%R~<pattern>/%W~<pattern>）
+# 设置可以访问的发布/订阅频道（&<pattern>）
+# 添加或删除用户的密码（><password>/<<password>）
+# 设置用户不需要密码（nopass）
+# 重置用户密码、键模式和权限（resetpass/resetkeys/reset）
+
+
+
+
+# 配置ACL日志的长度（单位字符）
 acllog-max-len 128
 
-# Using an external ACL file
-#
-# Instead of configuring users here in this file, it is possible to use
-# a stand-alone file just listing users. The two methods cannot be mixed:
-# if you configure users here and at the same time you activate the external
-# ACL file, the server will refuse to start.
-#
-# The format of the external ACL user file is exactly the same as the
-# format that is used inside redis.conf to describe users.
-#
+
+# ACL允许外部ACL用户文件，但是配置文件和外部ACL用户文件不可重复，下面指令指定外部acl文件位置
 # aclfile /etc/redis/users.acl
 
-# IMPORTANT NOTE: starting with Redis 6 "requirepass" is just a compatibility
-# layer on top of the new ACL system. The option effect will be just setting
-# the password for the default user. Clients will still authenticate using
-# AUTH <password> as usually, or more explicitly with AUTH default <password>
-# if they follow the new protocol: both will work.
-#
-# The requirepass is not compatible with aclfile option and the ACL LOAD
-# command, these will cause requirepass to be ignored.
-#
-# requirepass foobared
+
+# 设置默认用户的密码
 requirepass 123456
 
-# New users are initialized with restrictive permissions by default, via the
-# equivalent of this ACL rule 'off resetkeys -@all'. Starting with Redis 6.2, it
-# is possible to manage access to Pub/Sub channels with ACL rules as well. The
-# default Pub/Sub channels permission if new users is controlled by the
-# acl-pubsub-default configuration directive, which accepts one of these values:
-#
-# allchannels: grants access to all Pub/Sub channels
-# resetchannels: revokes access to all Pub/Sub channels
-#
-# From Redis 7.0, acl-pubsub-default defaults to 'resetchannels' permission.
-#
+
+
+# 设置新用户对Pub/Sub通道的默认权限
+# allchannels: 授予对所有Pub/Sub通道的访问权限。
+# resetchannels: （默认）撤销对所有Pub/Sub通道的访问权限。
 # acl-pubsub-default resetchannels
 
-# Command renaming (DEPRECATED).
-#
-# ------------------------------------------------------------------------
-# WARNING: avoid using this option if possible. Instead use ACLs to remove
-# commands from the default user, and put them only in some admin user you
-# create for administrative purposes.
-# ------------------------------------------------------------------------
-#
-# It is possible to change the name of dangerous commands in a shared
-# environment. For instance the CONFIG command may be renamed into something
-# hard to guess so that it will still be available for internal-use tools
-# but not available for general clients.
-#
-# Example:
-#
-# rename-command CONFIG b840fc02d524045429941cc15f59e41cb7be6c52
-#
-# It is also possible to completely kill a command by renaming it into
-# an empty string:
-#
-# rename-command CONFIG ""
-#
-# Please note that changing the name of commands that are logged into the
-# AOF file or transmitted to replicas may cause problems.
 
-################################### CLIENTS  客户####################################
 
-# Set the max number of connected clients at the same time. By default
-# this limit is set to 10000 clients, however if the Redis server is not
-# able to configure the process file limit to allow for the specified limit
-# the max number of allowed clients is set to the current file limit
-# minus 32 (as Redis reserves a few file descriptors for internal uses).
-#
-# Once the limit is reached Redis will close all the new connections sending
-# an error 'max number of clients reached'.
-#
-# IMPORTANT: When Redis Cluster is used, the max number of connections is also
-# shared with the cluster bus: every node in the cluster will use two
-# connections, one incoming and another outgoing. It is important to size the
-# limit accordingly in case of very large clusters.
-#
+################################### 客户端数量 ####################################
+
+# 设置最多连接客户端数量，默认10000
 # maxclients 10000
 
-############################## MEMORY MANAGEMENT ################################
+############################## 内存管理 ################################
 
-# Set a memory usage limit to the specified amount of bytes.
-# When the memory limit is reached Redis will try to remove keys
-# according to the eviction policy selected (see maxmemory-policy).
-#
-# If Redis can't remove keys according to the policy, or if the policy is
-# set to 'noeviction', Redis will start to reply with errors to commands
-# that would use more memory, like SET, LPUSH, and so on, and will continue
-# to reply to read-only commands like GET.
-#
-# This option is usually useful when using Redis as an LRU or LFU cache, or to
-# set a hard memory limit for an instance (using the 'noeviction' policy).
-#
-# WARNING: If you have replicas attached to an instance with maxmemory on,
-# the size of the output buffers needed to feed the replicas are subtracted
-# from the used memory count, so that network problems / resyncs will
-# not trigger a loop where keys are evicted, and in turn the output
-# buffer of replicas is full with DELs of keys evicted triggering the deletion
-# of more keys, and so forth until the database is completely emptied.
-#
-# In short... if you have replicas attached it is suggested that you set a lower
-# limit for maxmemory so that there is some free RAM on the system for replica
-# output buffers (but this is not needed if the policy is 'noeviction').
-#
+# 设置reids最多内存
 # maxmemory <bytes>
 
-# MAXMEMORY POLICY: how Redis will select what to remove when maxmemory
-# is reached. You can select one from the following behaviors:
-#
-# volatile-lru -> Evict using approximated LRU, only keys with an expire set.
-# allkeys-lru -> Evict any key using approximated LRU.
-# volatile-lfu -> Evict using approximated LFU, only keys with an expire set.
-# allkeys-lfu -> Evict any key using approximated LFU.
-# volatile-random -> Remove a random key having an expire set.
-# allkeys-random -> Remove a random key, any key.
-# volatile-ttl -> Remove the key with the nearest expire time (minor TTL)
-# noeviction -> Don't evict anything, just return an error on write operations.
-#
-# LRU means Least Recently Used
-# LFU means Least Frequently Used
-#
-# Both LRU, LFU and volatile-ttl are implemented using approximated
-# randomized algorithms.
-#
-# Note: with any of the above policies, when there are no suitable keys for
-# eviction, Redis will return an error on write operations that require
-# more memory. These are usually commands that create new keys, add data or
-# modify existing keys. A few examples are: SET, INCR, HSET, LPUSH, SUNIONSTORE,
-# SORT (due to the STORE argument), and EXEC (if the transaction includes any
-# command that requires memory).
-#
-# The default is:
+
+# 设置redis超出最大内存时以哪种方式删除键释放内存
+# volatile-lru -> 删除那些设置了过期时间（TTL）的键，优先删除最近最少使用（LRU）的键。适合用作缓存系统，其中一些键会设置过期时间，而未过期的键则不会被删除。
+# allkeys-lru -> 从所有键中（无论是否有过期时间）删除最近最少使用（LRU）的键。适合需要灵活管理所有键的缓存场景。
+# volatile-lfu -> 删除那些设置了过期时间（TTL）的键，优先删除使用频率最低（LFU）的键。LFU 更注重键的访问频率，适合缓存热点数据时使用。
+# allkeys-lfu -> 从所有键中（无论是否有过期时间）删除使用频率最低（LFU）的键。
+# volatile-random -> 随机删除设置了过期时间（TTL）的键。通常用于低优先级缓存，删除时无需关心访问模式或频率。
+# allkeys-random -> 随机删除任意键（无论是否设置过期时间）。不常用，因为可能会删除重要的键。
+# volatile-ttl -> 删除设置了过期时间（TTL）的键，并优先选择那些即将过期的键（TTL 最短）。对时间敏感的缓存场景可能有用。
+# noeviction -> 不删除任何键。当内存达到上限时，直接返回错误，拒绝所有需要新增或扩展内存的操作。适合希望严格控制数据的持久性而非缓存的场景。
 #
 # maxmemory-policy noeviction
 
-# LRU, LFU and minimal TTL algorithms are not precise algorithms but approximated
-# algorithms (in order to save memory), so you can tune it for speed or
-# accuracy. By default Redis will check five keys and pick the one that was
-# used least recently, you can change the sample size using the following
-# configuration directive.
-#
-# The default of 5 produces good enough results. 10 Approximates very closely
-# true LRU but costs more CPU. 3 is faster but not very accurate.
-#
+
+# redis在内存超出情况下清除内存时使用近似算法而不是精确算法来实现 LRU（最近最少使用）、LFU（最少使用频率）和最小 TTL 淘汰策略。
+#  maxmemory-samples 指定 Redis 在每次选择要淘汰的键时，从多少个键中进行采样。
+# 采样数量越大，结果越接近真实的 LRU/LFU/TLL 算法，但会消耗更多的 CPU。
+# 采样数量越小，速度更快，但结果的准确性会下降。
 # maxmemory-samples 5
 
-# Eviction processing is designed to function well with the default setting.
-# If there is an unusually large amount of write traffic, this value may need to
-# be increased.  Decreasing this value may reduce latency at the risk of
-# eviction processing effectiveness
-#   0 = minimum latency, 10 = default, 100 = process without regard to latency
-#
+# maxmemory-eviction-tenacity 用来调整 Redis 在执行键淘汰（eviction）时的强度（tenacity），即 Redis 为释放内存而投入的处理程度。
+# 它主要控制 Redis 在响应客户端请求与执行内存淘汰任务之间的平衡。
+# 取值0-100.0：着重客户端请求  100：着重内存淘汰任务
 # maxmemory-eviction-tenacity 10
 
-# Starting from Redis 5, by default a replica will ignore its maxmemory setting
-# (unless it is promoted to master after a failover or manually). It means
-# that the eviction of keys will be just handled by the master, sending the
-# DEL commands to the replica as keys evict in the master side.
-#
-# This behavior ensures that masters and replicas stay consistent, and is usually
-# what you want, however if your replica is writable, or you want the replica
-# to have a different memory setting, and you are sure all the writes performed
-# to the replica are idempotent, then you may change this default (but be sure
-# to understand what you are doing).
-#
-# Note that since the replica by default does not evict, it may end using more
-# memory than the one set via maxmemory (there are certain buffers that may
-# be larger on the replica, or data structures may sometimes take more memory
-# and so forth). So make sure you monitor your replicas and make sure they
-# have enough memory to never hit a real out-of-memory condition before the
-# master hits the configured maxmemory setting.
-#
+# 从节点从redis5开始就默认不进行内存管理，即maxmemory设置的值失效。
+# 默认值yes，从节点不进行内存管理，只进行读操作，尽可能保证主从数据一致性。但是可能会造成从节点内存大小大于主节点内存大小（缓冲区开销）
+# no：从节点进行内存管理，进行读写操作，可能会造成主从数据不一致情况
 # replica-ignore-maxmemory yes
 
-# Redis reclaims expired keys in two ways: upon access when those keys are
-# found to be expired, and also in background, in what is called the
-# "active expire key". The key space is slowly and interactively scanned
-# looking for expired keys to reclaim, so that it is possible to free memory
-# of keys that are expired and will never be accessed again in a short time.
-#
-# The default effort of the expire cycle will try to avoid having more than
-# ten percent of expired keys still in memory, and will try to avoid consuming
-# more than 25% of total memory and to add latency to the system. However
-# it is possible to increase the expire "effort" that is normally set to
-# "1", to a greater value, up to the value "10". At its maximum value the
-# system will use more CPU, longer cycles (and technically may introduce
-# more latency), and will tolerate less already expired keys still present
-# in the system. It's a tradeoff between memory, CPU and latency.
-#
+# redis的两种键过期处理方式：
+# 1. 被动回收，当发生访问键时，redis检查键是否过期，过期删除
+# 2. 主动回收，redis后台运行一个主动过期键扫描的任务，定期扫描已过期但还未访问的键
+# active-expire-effort参数控制主动回收的“努力程度”，即扫描频率和深度。
+# 参数范围1-10.1表示占用最少的CPU和内存，10表示扫描更加深入频繁
 # active-expire-effort 1
 
-############################# LAZY FREEING ####################################
 
-# Redis has two primitives to delete keys. One is called DEL and is a blocking
-# deletion of the object. It means that the server stops processing new commands
-# in order to reclaim all the memory associated with an object in a synchronous
-# way. If the key deleted is associated with a small object, the time needed
-# in order to execute the DEL command is very small and comparable to most other
-# O(1) or O(log_N) commands in Redis. However if the key is associated with an
-# aggregated value containing millions of elements, the server can block for
-# a long time (even seconds) in order to complete the operation.
-#
-# For the above reasons Redis also offers non blocking deletion primitives
-# such as UNLINK (non blocking DEL) and the ASYNC option of FLUSHALL and
-# FLUSHDB commands, in order to reclaim memory in background. Those commands
-# are executed in constant time. Another thread will incrementally free the
-# object in the background as fast as possible.
-#
-# DEL, UNLINK and ASYNC option of FLUSHALL and FLUSHDB are user-controlled.
-# It's up to the design of the application to understand when it is a good
-# idea to use one or the other. However the Redis server sometimes has to
-# delete keys or flush the whole database as a side effect of other operations.
-# Specifically Redis deletes objects independently of a user call in the
-# following scenarios:
-#
-# 1) On eviction, because of the maxmemory and maxmemory policy configurations,
-#    in order to make room for new data, without going over the specified
-#    memory limit.
-# 2) Because of expire: when a key with an associated time to live (see the
-#    EXPIRE command) must be deleted from memory.
-# 3) Because of a side effect of a command that stores data on a key that may
-#    already exist. For example the RENAME command may delete the old key
-#    content when it is replaced with another one. Similarly SUNIONSTORE
-#    or SORT with STORE option may delete existing keys. The SET command
-#    itself removes any old content of the specified key in order to replace
-#    it with the specified string.
-# 4) During replication, when a replica performs a full resynchronization with
-#    its master, the content of the whole database is removed in order to
-#    load the RDB file just transferred.
-#
-# In all the above cases the default is to delete objects in a blocking way,
-# like if DEL was called. However you can configure each case specifically
-# in order to instead release memory in a non-blocking way like if UNLINK
-# was called, using the following configuration directives.
+############################# 阻塞删除，非阻塞删除 ####################################
 
+# 删除key释放内存有两种方式：
+# 1. 阻塞方式删除key：del 如果要删除的内容过大，可能会造成当前进程阻塞
+# 2. 非阻塞方式删除key（惰性释放内存）：unlink 在其他进程执行删除操作，不会对主进程造成影响
+# redis有时需要再用户未显式删除键的情况下删除键：内存不足，键过期，通过命令替换旧址，主从复制的全量同步，下面四个配置配置在这四种情况下能否非阻塞删除
+# 在键的淘汰（内存容量超过）情况下是否采用非阻塞方式删除key
 lazyfree-lazy-eviction no
+# 在键过期的情况下是否采用非阻塞方式删除key
 lazyfree-lazy-expire no
+# 在服务器内部操作需要删除key时是否采用非阻塞方式删除key
 lazyfree-lazy-server-del no
+# 在主从复制时从节点是否采用非阻塞方式删除全部值
 replica-lazy-flush no
 
-# It is also possible, for the case when to replace the user code DEL calls
-# with UNLINK calls is not easy, to modify the default behavior of the DEL
-# command to act exactly like UNLINK, using the following configuration
-# directive:
 
+# 进行用户的del操作转为unlink操作，阻塞方式转为非阻塞方式
+# 当设置为yes时，用户的del操作全被转换为unlink操作
+# 当设置为no时，用户的del操作不会转换
 lazyfree-lazy-user-del no
 
-# FLUSHDB, FLUSHALL, SCRIPT FLUSH and FUNCTION FLUSH support both asynchronous and synchronous
-# deletion, which can be controlled by passing the [SYNC|ASYNC] flags into the
-# commands. When neither flag is passed, this directive will be used to determine
-# if the data should be deleted asynchronously.
 
+
+# 设置FLUSHDB（删除当前数据库内容）、FLUSHALL（删除全部数据库内容）、SCRIPT FLUSH （删除脚本缓存）和 FUNCTION FLUSH（删除函数缓存）这四个命令是采用阻塞式删除还是非阻塞式删除
 lazyfree-lazy-user-flush no
 
-################################ THREADED I/O #################################
 
-# Redis is mostly single threaded, however there are certain threaded
-# operations such as UNLINK, slow I/O accesses and other things that are
-# performed on side threads.
-#
-# Now it is also possible to handle Redis clients socket reads and writes
-# in different I/O threads. Since especially writing is so slow, normally
-# Redis users use pipelining in order to speed up the Redis performances per
-# core, and spawn multiple instances in order to scale more. Using I/O
-# threads it is possible to easily speedup two times Redis without resorting
-# to pipelining nor sharding of the instance.
-#
-# By default threading is disabled, we suggest enabling it only in machines
-# that have at least 4 or more cores, leaving at least one spare core.
-# Using more than 8 threads is unlikely to help much. We also recommend using
-# threaded I/O only if you actually have performance problems, with Redis
-# instances being able to use a quite big percentage of CPU time, otherwise
-# there is no point in using this feature.
-#
-# So for instance if you have a four cores boxes, try to use 2 or 3 I/O
-# threads, if you have a 8 cores, try to use 6 threads. In order to
-# enable I/O threads use the following configuration directive:
-#
+################################ I/O多线程 #################################
+# 是否开启IO多线程，如果值为1，说明只有一个主线程，如果大于1，说明有多个线程处理IO操作
 # io-threads 4
 #
-# Setting io-threads to 1 will just use the main thread as usual.
-# When I/O threads are enabled, we only use threads for writes, that is
-# to thread the write(2) syscall and transfer the client buffers to the
-# socket. However it is also possible to enable threading of reads and
-# protocol parsing using the following configuration directive, by setting
-# it to yes:
-#
+# 是否启动读操作多线程，默认不开启，读操作占用少，由主线程处理，写操作占用大，由其他线程处理
 # io-threads-do-reads no
-#
-# Usually threading reads doesn't help much.
-#
-# NOTE 1: This configuration directive cannot be changed at runtime via
-# CONFIG SET. Also, this feature currently does not work when SSL is
-# enabled.
-#
-# NOTE 2: If you want to test the Redis speedup using redis-benchmark, make
-# sure you also run the benchmark itself in threaded mode, using the
-# --threads option to match the number of Redis threads, otherwise you'll not
-# be able to notice the improvements.
 
-############################ KERNEL OOM CONTROL ##############################
 
-# On Linux, it is possible to hint the kernel OOM killer on what processes
-# should be killed first when out of memory.
-#
-# Enabling this feature makes Redis actively control the oom_score_adj value
-# for all its processes, depending on their role. The default scores will
-# attempt to have background child processes killed before all others, and
-# replicas killed before masters.
-#
-# Redis supports these options:
-#
-# no:       Don't make changes to oom-score-adj (default).
-# yes:      Alias to "relative" see below.
-# absolute: Values in oom-score-adj-values are written as is to the kernel.
-# relative: Values are used relative to the initial value of oom_score_adj when
-#           the server starts and are then clamped to a range of -1000 to 1000.
-#           Because typically the initial value is 0, they will often match the
-#           absolute values.
+############################ Linux OOM killer机制干涉 ##############################
+
+# 在极端环境下，redis可能会导致linux的内存超限，会触发Linux的OOM killer机制，将一些redis的进程杀死
+# 通过oom-score-adj参数可以控制是否调整redis进程的oom-score-adj
+# no：不修改oom-score-adj值，不干涉linux的OOM killer机制
+# yes：等同于relative
+# absolute：直接设置 oom_score_adj 值为配置的绝对值
+# absolute：设置为相对于 Redis 启动时初始 oom_score_adj 的值，并限制在 -1000 到 1000 之间
 oom-score-adj no
 
-# When oom-score-adj is used, this directive controls the specific values used
-# for master, replica and background child processes. Values range -2000 to
-# 2000 (higher means more likely to be killed).
-#
-# Unprivileged processes (not root, and without CAP_SYS_RESOURCE capabilities)
-# can freely increase their value, but not decrease it below its initial
-# settings. This means that setting oom-score-adj to "relative" and setting the
-# oom-score-adj-values to positive values will always succeed.
+# 设置redis主实例，副本实例，后台子进程的oom-score-adj值
+# 主实例：主要用于数据写入和读请求
+# 副本实例：主要用于数据同步
+# 后台子进程：用于保存快照RDB文件或重写AOF日志
+# 下面例子设置主实例为0，最不容易被杀死，副本实例为200，中等可能性被杀死，后台子进程为800，最容易被杀死
 oom-score-adj-values 0 200 800
 
 
-#################### KERNEL transparent hugepage CONTROL ######################
+#################### 是否禁用THP功能 ######################
 
-# Usually the kernel Transparent Huge Pages control is set to "madvise" or
-# or "never" by default (/sys/kernel/mm/transparent_hugepage/enabled), in which
-# case this config has no effect. On systems in which it is set to "always",
-# redis will attempt to disable it specifically for the redis process in order
-# to avoid latency problems specifically with fork(2) and CoW.
-# If for some reason you prefer to keep it enabled, you can set this config to
-# "no" and the kernel global to "always".
-
+# THP功能是 是 Linux 内核的一种内存管理功能，用于提高某些应用程序的性能。
+# THP 将多个普通内存页（4 KB）合并成大页（通常为 2 MB），以减少页表开销，提高内存访问效率。
+# 但是对于redis这中内存密集型应用而言，THP功能会导致redis性能下降，默认关闭THP功能
 disable-thp yes
 
-############################## APPEND ONLY MODE ###############################
-
-# By default Redis asynchronously dumps the dataset on disk. This mode is
-# good enough in many applications, but an issue with the Redis process or
-# a power outage may result into a few minutes of writes lost (depending on
-# the configured save points).
-#
-# The Append Only File is an alternative persistence mode that provides
-# much better durability. For instance using the default data fsync policy
-# (see later in the config file) Redis can lose just one second of writes in a
-# dramatic event like a server power outage, or a single write if something
-# wrong with the Redis process itself happens, but the operating system is
-# still running correctly.
-#
-# AOF and RDB persistence can be enabled at the same time without problems.
-# If the AOF is enabled on startup Redis will load the AOF, that is the file
-# with the better durability guarantees.
-#
-# Please check https://redis.io/topics/persistence for more information.
-
+############################## 持久化配置 AOF ###############################
+# 配置是否启用AOF持久化
 appendonly no
 
-# The base name of the append only file.
-#
-# Redis 7 and newer use a set of append-only files to persist the dataset
-# and changes applied to it. There are two basic types of files in use:
-#
-# - Base files, which are a snapshot representing the complete state of the
-#   dataset at the time the file was created. Base files can be either in
-#   the form of RDB (binary serialized) or AOF (textual commands).
-# - Incremental files, which contain additional commands that were applied
-#   to the dataset following the previous file.
-#
-# In addition, manifest files are used to track the files and the order in
-# which they were created and should be applied.
-#
-# Append-only file names are created by Redis following a specific pattern.
-# The file name's prefix is based on the 'appendfilename' configuration
-# parameter, followed by additional information about the sequence and type.
-#
-# For example, if appendfilename is set to appendonly.aof, the following file
-# names could be derived:
-#
-# - appendonly.aof.1.base.rdb as a base file.
-# - appendonly.aof.1.incr.aof, appendonly.aof.2.incr.aof as incremental files.
-# - appendonly.aof.manifest as a manifest file.
 
+# 在redis7版本后AOF文件存储形式发生变化，一份AOF数据由三部分组成：
+# appendonly.aof.1.base.rdb   base基本文件，最多1个
+# appendonly.aof.1.incr.aof      incr增量文件，可以多个
+# appendonly.aof.manifest       manifest清单文件，会自动清除
+# appendfilename参数设置了文件名
 appendfilename "appendonly.aof"
 
-# For convenience, Redis stores all persistent append-only files in a dedicated
-# directory. The name of the directory is determined by the appenddirname
-# configuration parameter.
 
-appenddirname "appendonlydir"
+# 设置AOF文件保存位置，由dir和apenddirname两个目录组成
+appenddirname "aof_files"
 
-# The fsync() call tells the Operating System to actually write data on disk
-# instead of waiting for more data in the output buffer. Some OS will really flush
-# data on disk, some other OS will just try to do it ASAP.
-#
-# Redis supports three different modes:
-#
-# no: don't fsync, just let the OS flush the data when it wants. Faster.
-# always: fsync after every write to the append only log. Slow, Safest.
-# everysec: fsync only one time every second. Compromise.
-#
-# The default is "everysec", as that's usually the right compromise between
-# speed and data safety. It's up to you to understand if you can relax this to
-# "no" that will let the operating system flush the output buffer when
-# it wants, for better performances (but if you can live with the idea of
-# some data loss consider the default persistence mode that's snapshotting),
-# or on the contrary, use "always" that's very slow but a bit safer than
-# everysec.
-#
-# More details please check the following article:
-# http://antirez.com/post/redis-persistence-demystified.html
-#
-# If unsure, use "everysec".
 
+
+# 三种写回策略：
+# 写回是发生在缓冲区和AOF文件中，进行的命令会堆积在缓冲区中，如果达到指定大小，就进行写回到AOF文件中
+# 控制AOF的精准程度
+# 
+# always：每次写入 AOF 日志文件后立即调用 fsync()。
+# 优点：数据最安全，因为每次写操作都会立刻写入磁盘，最大限度地减少数据丢失风险。
+# 缺点：性能最差，因为频繁调用 fsync() 会带来较高的 I/O 开销。
+# 适用场景：对数据一致性要求极高的系统。
+# 
+# everysec (默认值)：每秒调用一次 fsync()。
+# 优点：在性能与数据安全之间提供良好的平衡。即使系统崩溃，最多只会丢失 1 秒的数据。
+# 缺点：比 always 稍微有可能丢失少量数据。
+# 适用场景：大多数生产环境。
+# 
+# no：不主动调用 fsync()，仅依赖操作系统的缓冲区机制，何时将数据写入磁盘由操作系统决定。
+# 优点：性能最佳，因为省去了 fsync() 的开销。
+# 缺点：数据丢失风险较大，可能会丢失大量未刷新的数据。
+# 适用场景：对性能要求极高，且可以接受数据丢失的场景。
+# 
 # appendfsync always
 appendfsync everysec
 # appendfsync no
 
-# When the AOF fsync policy is set to always or everysec, and a background
-# saving process (a background save or AOF log background rewriting) is
-# performing a lot of I/O against the disk, in some Linux configurations
-# Redis may block too long on the fsync() call. Note that there is no fix for
-# this currently, as even performing fsync in a different thread will block
-# our synchronous write(2) call.
-#
-# In order to mitigate this problem it's possible to use the following option
-# that will prevent fsync() from being called in the main process while a
-# BGSAVE or BGREWRITEAOF is in progress.
-#
-# This means that while another child is saving, the durability of Redis is
-# the same as "appendfsync none". In practical terms, this means that it is
-# possible to lose up to 30 seconds of log in the worst scenario (with the
-# default Linux settings).
-#
-# If you have latency problems turn this to "yes". Otherwise leave it as
-# "no" that is the safest pick from the point of view of durability.
 
+# 
 no-appendfsync-on-rewrite no
 
 # Automatic rewrite of the append only file.
