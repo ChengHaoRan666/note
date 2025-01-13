@@ -1173,7 +1173,7 @@ auto-aof-rewrite-min-size：指定AOF文件的最小大小，只有当AOF文件�
 
 ```conf
 1515 # 是否开启AOF和RDB两种持久化方式混合
-    1516 aof-use-rdb-preamble yes
+   1516 aof-use-rdb-preamble yes
 ```
 
 
