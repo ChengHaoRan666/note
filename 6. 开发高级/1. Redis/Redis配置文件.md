@@ -187,6 +187,87 @@ rdb-del-sync-files no
 dir /opt/soft/redis-7.0.1/dumpfiles
 
 
+
+############################## 持久化配置 AOF ###############################
+# 配置是否启用AOF持久化
+appendonly yes
+
+
+# 在redis7版本后AOF文件存储形式发生变化，一份AOF数据由三部分组成：
+# appendonly.aof.1.base.rdb   base基本文件，最多1个
+# appendonly.aof.1.incr.aof      incr增量文件，可以多个
+# appendonly.aof.manifest       manifest清单文件，会自动清除
+# appendfilename参数设置了文件名
+appendfilename "appendonly.aof"
+
+
+# 设置AOF文件保存位置，由dir和apenddirname两个目录组成
+appenddirname "aof_files"
+
+
+
+# 三种写回策略：
+# 写回是发生在缓冲区和AOF文件中，进行的命令会堆积在缓冲区中，如果达到指定大小，就进行写回到AOF文件中
+# 控制AOF的精准程度
+# 
+# always：每次写入 AOF 日志文件后立即调用 fsync()。
+# 优点：数据最安全，因为每次写操作都会立刻写入磁盘，最大限度地减少数据丢失风险。
+# 缺点：性能最差，因为频繁调用 fsync() 会带来较高的 I/O 开销。
+# 适用场景：对数据一致性要求极高的系统。
+# 
+# everysec (默认值)：每秒调用一次 fsync()。
+# 优点：在性能与数据安全之间提供良好的平衡。即使系统崩溃，最多只会丢失 1 秒的数据。
+# 缺点：比 always 稍微有可能丢失少量数据。
+# 适用场景：大多数生产环境。
+# 
+# no：不主动调用 fsync()，仅依赖操作系统的缓冲区机制，何时将数据写入磁盘由操作系统决定。
+# 优点：性能最佳，因为省去了 fsync() 的开销。
+# 缺点：数据丢失风险较大，可能会丢失大量未刷新的数据。
+# 适用场景：对性能要求极高，且可以接受数据丢失的场景。
+# 
+# appendfsync always
+appendfsync everysec
+# appendfsync no
+
+
+# 此配置项控制 Redis 在执行 AOF 重写（BGREWRITEAOF） 或 后台保存（BGSAVE） 时，是否暂停主进程对 AOF 文件的 fsync() 操作。它主要用来 平衡数据持久化的安全性和系统性能/延迟。
+# no-appendfsync-on-rewrite 提供了一种权衡机制：
+# 关闭主进程的 fsync() 操作，减少延迟问题。
+# 代价是可能会丢失一些数据（类似于 appendfsync no 的效果）。
+no-appendfsync-on-rewrite no
+
+
+# AOF重写机制：
+# 在AOF文件中记录了每个指令，其中有多条指令对同一个键值对进行操作，会导致AOF文件过大，我们设置AOF重写的门槛，一旦达到就进行重写
+# AOF重写：启动AOF文件的内容压缩，只保留可以恢复数据的最小指令集
+# auto-aof-rewrite-percentage 指令：指定当前AOF文件大小是上次重写后大小的一定百分比时，触发重写
+# auto-aof-rewrite-min-size指令：指定AOF文件的最小大小，只有当AOF文件大小超过后，触发重写
+# 两个条件同时达成才会进行重写
+auto-aof-rewrite-percentage 100
+auto-aof-rewrite-min-size 64mb
+
+
+# 当redis启动时，发生AOF文件末尾被截断（系统崩溃未成功录入）怎么处理
+# yes（默认）：
+# Redis 会尝试加载 AOF 文件中尽可能多的有效数据。
+# 服务器会正常启动，同时在日志中记录警告，提示文件被截断。
+# no：
+# Redis 检测到截断后直接退出，拒绝启动。
+# 管理员需要手动修复 AOF 文件，例如使用 redis-check-aof 工具修复文件，然后再重启 Redis。
+aof-load-truncated yes
+
+
+# 同时采用RDB和AOF两种持久化方式，AOF中base文件采用RDB格式，默认开启
+aof-use-rdb-preamble yes
+
+
+# 是否在 AOF（Append Only File） 文件中记录时间戳，用于支持基于 特定时间点的恢复（Point-in-Time Recovery, PITR）。
+# 如果启用，AOF 文件中会包含额外的时间戳注解。
+aof-timestamp-enabled no
+
+
+
+
 ################################# 主从复制 哨兵机制 #################################
 
 # 主从复制时从节点配置主节点IP和端口号
@@ -471,498 +552,169 @@ oom-score-adj-values 0 200 800
 # 但是对于redis这中内存密集型应用而言，THP功能会导致redis性能下降，默认关闭THP功能
 disable-thp yes
 
-############################## 持久化配置 AOF ###############################
-# 配置是否启用AOF持久化
-appendonly no
 
+################################ 关闭 #####################################
 
-# 在redis7版本后AOF文件存储形式发生变化，一份AOF数据由三部分组成：
-# appendonly.aof.1.base.rdb   base基本文件，最多1个
-# appendonly.aof.1.incr.aof      incr增量文件，可以多个
-# appendonly.aof.manifest       manifest清单文件，会自动清除
-# appendfilename参数设置了文件名
-appendfilename "appendonly.aof"
-
-
-# 设置AOF文件保存位置，由dir和apenddirname两个目录组成
-appenddirname "aof_files"
-
-
-
-# 三种写回策略：
-# 写回是发生在缓冲区和AOF文件中，进行的命令会堆积在缓冲区中，如果达到指定大小，就进行写回到AOF文件中
-# 控制AOF的精准程度
-# 
-# always：每次写入 AOF 日志文件后立即调用 fsync()。
-# 优点：数据最安全，因为每次写操作都会立刻写入磁盘，最大限度地减少数据丢失风险。
-# 缺点：性能最差，因为频繁调用 fsync() 会带来较高的 I/O 开销。
-# 适用场景：对数据一致性要求极高的系统。
-# 
-# everysec (默认值)：每秒调用一次 fsync()。
-# 优点：在性能与数据安全之间提供良好的平衡。即使系统崩溃，最多只会丢失 1 秒的数据。
-# 缺点：比 always 稍微有可能丢失少量数据。
-# 适用场景：大多数生产环境。
-# 
-# no：不主动调用 fsync()，仅依赖操作系统的缓冲区机制，何时将数据写入磁盘由操作系统决定。
-# 优点：性能最佳，因为省去了 fsync() 的开销。
-# 缺点：数据丢失风险较大，可能会丢失大量未刷新的数据。
-# 适用场景：对性能要求极高，且可以接受数据丢失的场景。
-# 
-# appendfsync always
-appendfsync everysec
-# appendfsync no
-
-
-# 
-no-appendfsync-on-rewrite no
-
-# Automatic rewrite of the append only file.
-# Redis is able to automatically rewrite the log file implicitly calling
-# BGREWRITEAOF when the AOF log size grows by the specified percentage.
-#
-# This is how it works: Redis remembers the size of the AOF file after the
-# latest rewrite (if no rewrite has happened since the restart, the size of
-# the AOF at startup is used).
-#
-# This base size is compared to the current size. If the current size is
-# bigger than the specified percentage, the rewrite is triggered. Also
-# you need to specify a minimal size for the AOF file to be rewritten, this
-# is useful to avoid rewriting the AOF file even if the percentage increase
-# is reached but it is still pretty small.
-#
-# Specify a percentage of zero in order to disable the automatic AOF
-# rewrite feature.
-
-auto-aof-rewrite-percentage 100
-auto-aof-rewrite-min-size 64mb
-
-# An AOF file may be found to be truncated at the end during the Redis
-# startup process, when the AOF data gets loaded back into memory.
-# This may happen when the system where Redis is running
-# crashes, especially when an ext4 filesystem is mounted without the
-# data=ordered option (however this can't happen when Redis itself
-# crashes or aborts but the operating system still works correctly).
-#
-# Redis can either exit with an error when this happens, or load as much
-# data as possible (the default now) and start if the AOF file is found
-# to be truncated at the end. The following option controls this behavior.
-#
-# If aof-load-truncated is set to yes, a truncated AOF file is loaded and
-# the Redis server starts emitting a log to inform the user of the event.
-# Otherwise if the option is set to no, the server aborts with an error
-# and refuses to start. When the option is set to no, the user requires
-# to fix the AOF file using the "redis-check-aof" utility before to restart
-# the server.
-#
-# Note that if the AOF file will be found to be corrupted in the middle
-# the server will still exit with an error. This option only applies when
-# Redis will try to read more data from the AOF file but not enough bytes
-# will be found.
-aof-load-truncated yes
-
-# Redis can create append-only base files in either RDB or AOF formats. Using
-# the RDB format is always faster and more efficient, and disabling it is only
-# supported for backward compatibility purposes.
-aof-use-rdb-preamble yes
-
-# Redis supports recording timestamp annotations in the AOF to support restoring
-# the data from a specific point-in-time. However, using this capability changes
-# the AOF format in a way that may not be compatible with existing AOF parsers.
-aof-timestamp-enabled no
-
-################################ SHUTDOWN #####################################
-
-# Maximum time to wait for replicas when shutting down, in seconds.
-#
-# During shut down, a grace period allows any lagging replicas to catch up with
-# the latest replication offset before the master exists. This period can
-# prevent data loss, especially for deployments without configured disk backups.
-#
-# The 'shutdown-timeout' value is the grace period's duration in seconds. It is
-# only applicable when the instance has replicas. To disable the feature, set
-# the value to 0.
-#
+# 设置在关闭主节点的时候，等待子节点同步数据的最大时间，默认10s
 # shutdown-timeout 10
 
-# When Redis receives a SIGINT or SIGTERM, shutdown is initiated and by default
-# an RDB snapshot is written to disk in a blocking operation if save points are configured.
-# The options used on signaled shutdown can include the following values:
-# default:  Saves RDB snapshot only if save points are configured.
-#           Waits for lagging replicas to catch up.
-# save:     Forces a DB saving operation even if no save points are configured.
-# nosave:   Prevents DB saving operation even if one or more save points are configured.
-# now:      Skips waiting for lagging replicas.
-# force:    Ignores any errors that would normally prevent the server from exiting.
-#
-# Any combination of values is allowed as long as "save" and "nosave" are not set simultaneously.
-# Example: "nosave force now"
-#
+
+# 配置当redis收到关闭信号（sigint和sigterm）时的操作
+# default：保存 RDB 快照（仅当配置了 save 点时）。等待滞后的副本同步（取决于 shutdown-timeout 配置）。
+# save：强制保存 RDB 快照，无论是否配置了 save 点。
+# nosave：不保存 RDB 快照，即使已配置了 save 点。
+# now：跳过等待滞后的副本同步，立即关闭。
+# force：忽略任何错误，例如快照保存失败，强制退出。
 # shutdown-on-sigint default
 # shutdown-on-sigterm default
 
-################ NON-DETERMINISTIC LONG BLOCKING COMMANDS #####################
+################ 执行脚本或函数时间配置 #####################
 
-# Maximum time in milliseconds for EVAL scripts, functions and in some cases
-# modules' commands before Redis can start processing or rejecting other clients.
-#
-# If the maximum execution time is reached Redis will start to reply to most
-# commands with a BUSY error.
-#
-# In this state Redis will only allow a handful of commands to be executed.
-# For instance, SCRIPT KILL, FUNCTION KILL, SHUTDOWN NOSAVE and possibly some
-# module specific 'allow-busy' commands.
-#
-# SCRIPT KILL and FUNCTION KILL will only be able to stop a script that did not
-# yet call any write commands, so SHUTDOWN NOSAVE may be the only way to stop
-# the server in the case a write command was already issued by the script when
-# the user doesn't want to wait for the natural termination of the script.
-#
-# The default is 5 seconds. It is possible to set it to 0 or a negative value
-# to disable this mechanism (uninterrupted execution). Note that in the past
-# this config had a different name, which is now an alias, so both of these do
-# the same:
+# 定义redis允许脚本或函数执行的最长时间，单位毫秒
 # lua-time-limit 5000
 # busy-reply-threshold 5000
 
-################################ REDIS CLUSTER  ###############################
-
-# Normal Redis instances can't be part of a Redis Cluster; only nodes that are
-# started as cluster nodes can. In order to start a Redis instance as a
-# cluster node enable the cluster support uncommenting the following:
-#
+################################ 集群模式  ###############################
+# 配置redis是否启用集群模式
 # cluster-enabled yes
 
-# Every cluster node has a cluster configuration file. This file is not
-# intended to be edited by hand. It is created and updated by Redis nodes.
-# Every Redis Cluster node requires a different cluster configuration file.
-# Make sure that instances running in the same system do not have
-# overlapping cluster configuration file names.
-#
+
+# 指定集群节点配置文件（保存当前节点状态，自动生成，不要手动编辑）
 # cluster-config-file nodes-6379.conf
 
-# Cluster node timeout is the amount of milliseconds a node must be unreachable
-# for it to be considered in failure state.
-# Most other internal time limits are a multiple of the node timeout.
-#
+
+
+# # 集群超时时间（以毫秒为单位）
 # cluster-node-timeout 15000
 
-# The cluster port is the port that the cluster bus will listen for inbound connections on. When set 
-# to the default value, 0, it will be bound to the command port + 10000. Setting this value requires 
-# you to specify the cluster bus port when executing cluster meet.
+
+# 定义了集群总线监听的端口，默认值为0，当设置为0时，总线监听端口将被设置为当前端口+10000
 # cluster-port 0
 
-# A replica of a failing master will avoid to start a failover if its data
-# looks too old.
-#
-# There is no simple way for a replica to actually have an exact measure of
-# its "data age", so the following two checks are performed:
-#
-# 1) If there are multiple replicas able to failover, they exchange messages
-#    in order to try to give an advantage to the replica with the best
-#    replication offset (more data from the master processed).
-#    Replicas will try to get their rank by offset, and apply to the start
-#    of the failover a delay proportional to their rank.
-#
-# 2) Every single replica computes the time of the last interaction with
-#    its master. This can be the last ping or command received (if the master
-#    is still in the "connected" state), or the time that elapsed since the
-#    disconnection with the master (if the replication link is currently down).
-#    If the last interaction is too old, the replica will not try to failover
-#    at all.
-#
-# The point "2" can be tuned by user. Specifically a replica will not perform
-# the failover if, since the last interaction with the master, the time
-# elapsed is greater than:
-#
-#   (node-timeout * cluster-replica-validity-factor) + repl-ping-replica-period
-#
-# So for example if node-timeout is 30 seconds, and the cluster-replica-validity-factor
-# is 10, and assuming a default repl-ping-replica-period of 10 seconds, the
-# replica will not try to failover if it was not able to talk with the master
-# for longer than 310 seconds.
-#
-# A large cluster-replica-validity-factor may allow replicas with too old data to failover
-# a master, while a too small value may prevent the cluster from being able to
-# elect a replica at all.
-#
-# For maximum availability, it is possible to set the cluster-replica-validity-factor
-# to a value of 0, which means, that replicas will always try to failover the
-# master regardless of the last time they interacted with the master.
-# (However they'll always try to apply a delay proportional to their
-# offset rank).
-#
-# Zero is the only value able to guarantee that when all the partitions heal
-# the cluster will always be able to continue.
-#
+
+
+# cluster-replica-validity-factor 是 Redis 集群模式下的一个重要配置项，用于控制副本节点在主节点故障时是否有资格进行主从切换（Failover）。
+# 值越小，选择为主节点的要求越低
 # cluster-replica-validity-factor 10
 
-# Cluster replicas are able to migrate to orphaned masters, that are masters
-# that are left without working replicas. This improves the cluster ability
-# to resist to failures as otherwise an orphaned master can't be failed over
-# in case of failure if it has no working replicas.
-#
-# Replicas migrate to orphaned masters only if there are still at least a
-# given number of other working replicas for their old master. This number
-# is the "migration barrier". A migration barrier of 1 means that a replica
-# will migrate only if there is at least 1 other working replica for its master
-# and so forth. It usually reflects the number of replicas you want for every
-# master in your cluster.
-#
-# Default is 1 (replicas migrate only if their masters remain with at least
-# one replica). To disable migration just set it to a very large value or
-# set cluster-allow-replica-migration to 'no'.
-# A value of 0 can be set but is useful only for debugging and dangerous
-# in production.
-#
+
+
+# 该配置控制副本节点是否允许迁移到孤立主节点，以确保集群中的每个主节点至少有一个副本。
+# 迁移条件由 迁移屏障值（migration barrier） 决定，该值表示副本迁移时旧主节点需要保留的最低副本数量。
+# 默认值为1，即如果当前主节点的副本节点大于1，那么可以进行迁移到孤立主节点上。
 # cluster-migration-barrier 1
 
-# Turning off this option allows to use less automatic cluster configuration.
-# It both disables migration to orphaned masters and migration from masters
-# that became empty.
-#
-# Default is 'yes' (allow automatic migrations).
-#
+
+
+# 决定是否能够进行副本节点迁移：从一个数据被清空的主节点迁移到其他主节点上，迁移到孤立主节点上
 # cluster-allow-replica-migration yes
 
-# By default Redis Cluster nodes stop accepting queries if they detect there
-# is at least a hash slot uncovered (no available node is serving it).
-# This way if the cluster is partially down (for example a range of hash slots
-# are no longer covered) all the cluster becomes, eventually, unavailable.
-# It automatically returns available as soon as all the slots are covered again.
-#
-# However sometimes you want the subset of the cluster which is working,
-# to continue to accept queries for the part of the key space that is still
-# covered. In order to do so, just set the cluster-require-full-coverage
-# option to no.
-#
+
+
+
+# 控制当集群中有部分哈希槽（hash slot）未被覆盖时，整个集群是否仍然可以提供服务
+# 默认yes，不提供服务
 # cluster-require-full-coverage yes
 
-# This option, when set to yes, prevents replicas from trying to failover its
-# master during master failures. However the replica can still perform a
-# manual failover, if forced to do so.
-#
-# This is useful in different scenarios, especially in the case of multiple
-# data center operations, where we want one side to never be promoted if not
-# in the case of a total DC failure.
-#
+
+# 是否允许从节点在主节点故障时自动接管
+# no：默认值，允许从节点接管
+# yes：不允许从节点接管
 # cluster-replica-no-failover no
 
-# This option, when set to yes, allows nodes to serve read traffic while the
-# cluster is in a down state, as long as it believes it owns the slots.
-#
-# This is useful for two cases.  The first case is for when an application
-# doesn't require consistency of data during node failures or network partitions.
-# One example of this is a cache, where as long as the node has the data it
-# should be able to serve it.
-#
-# The second use case is for configurations that don't meet the recommended
-# three shards but want to enable cluster mode and scale later. A
-# master outage in a 1 or 2 shard configuration causes a read/write outage to the
-# entire cluster without this option set, with it set there is only a write outage.
-# Without a quorum of masters, slot ownership will not change automatically.
-#
+
+
+
+# 集群处于下线状态（Cluster Down）时，是否仍允许节点提供只读访问服务。
+# no：默认值，集群下线后，拒绝全部请求
+# yes：集群下线，允许提供只读服务
 # cluster-allow-reads-when-down no
 
-# This option, when set to yes, allows nodes to serve pubsub shard traffic while
-# the cluster is in a down state, as long as it believes it owns the slots.
-#
-# This is useful if the application would like to use the pubsub feature even when
-# the cluster global stable state is not OK. If the application wants to make sure only
-# one shard is serving a given channel, this feature should be kept as yes.
-#
+
+
+
+# 用于控制当集群处于下线状态（Cluster Down）时，是否仍允许节点继续处理 Pub/Sub 分片相关的流量。
+# no：所有与 Pub/Sub 分片相关的流量将被中止
+# yes：默认值：只要节点仍认为它拥有相关的哈希槽，就会继续服务与 Pub/Sub 分片相关的流量。
 # cluster-allow-pubsubshard-when-down yes
 
-# Cluster link send buffer limit is the limit on the memory usage of an individual
-# cluster bus link's send buffer in bytes. Cluster links would be freed if they exceed
-# this limit. This is to primarily prevent send buffers from growing unbounded on links
-# toward slow peers (E.g. PubSub messages being piled up).
-# This limit is disabled by default. Enable this limit when 'mem_cluster_links' INFO field
-# and/or 'send-buffer-allocated' entries in the 'CLUSTER LINKS` command output continuously increase.
-# Minimum limit of 1gb is recommended so that cluster link buffer can fit in at least a single
-# PubSub message by default. (client-query-buffer-limit default value is 1gb)
-#
+
+
+
+# 限制单个集群总线（cluster bus）链接的发送缓冲区的内存使用量，单位为字节。
 # cluster-link-sendbuf-limit 0
  
-# Clusters can configure their announced hostname using this config. This is a common use case for 
-# applications that need to use TLS Server Name Indication (SNI) or dealing with DNS based
-# routing. By default this value is only shown as additional metadata in the CLUSTER SLOTS
-# command, but can be changed using 'cluster-preferred-endpoint-type' config. This value is 
-# communicated along the clusterbus to all nodes, setting it to an empty string will remove 
-# the hostname and also propagate the removal.
-#
+
+
+# 为集群节点设置一个对外公告的主机名
 # cluster-announce-hostname ""
 
-# Clusters can advertise how clients should connect to them using either their IP address,
-# a user defined hostname, or by declaring they have no endpoint. Which endpoint is
-# shown as the preferred endpoint is set by using the cluster-preferred-endpoint-type
-# config with values 'ip', 'hostname', or 'unknown-endpoint'. This value controls how
-# the endpoint returned for MOVED/ASKING requests as well as the first field of CLUSTER SLOTS. 
-# If the preferred endpoint type is set to hostname, but no announced hostname is set, a '?' 
-# will be returned instead.
-#
-# When a cluster advertises itself as having an unknown endpoint, it's indicating that
-# the server doesn't know how clients can reach the cluster. This can happen in certain 
-# networking situations where there are multiple possible routes to the node, and the 
-# server doesn't know which one the client took. In this case, the server is expecting
-# the client to reach out on the same endpoint it used for making the last request, but use
-# the port provided in the response.
-#
+
+
+# 控制节点向客户端广告的首选连接方式是 IP 地址、主机名 还是 未知端点。
+# ip
+# hostname ：使用 cluster-announce-hostname 设置的对外公告主机名连接
+# unknown-endpoint ：未知端口连接
 # cluster-preferred-endpoint-type ip
 
-# In order to setup your cluster make sure to read the documentation
-# available at https://redis.io web site.
 
-########################## CLUSTER DOCKER/NAT support  ########################
-
-# In certain deployments, Redis Cluster nodes address discovery fails, because
-# addresses are NAT-ted or because ports are forwarded (the typical case is
-# Docker and other containers).
-#
-# In order to make Redis Cluster working in such environments, a static
-# configuration where each node knows its public address is needed. The
-# following four options are used for this scope, and are:
-#
-# * cluster-announce-ip
-# * cluster-announce-port
-# * cluster-announce-tls-port
-# * cluster-announce-bus-port
-#
-# Each instructs the node about its address, client ports (for connections
-# without and with TLS) and cluster message bus port. The information is then
-# published in the header of the bus packets so that other nodes will be able to
-# correctly map the address of the node publishing the information.
-#
-# If cluster-tls is set to yes and cluster-announce-tls-port is omitted or set
-# to zero, then cluster-announce-port refers to the TLS port. Note also that
-# cluster-announce-tls-port has no effect if cluster-tls is set to no.
-#
-# If the above options are not used, the normal Redis Cluster auto-detection
-# will be used instead.
-#
-# Note that when remapped, the bus port may not be at the fixed offset of
-# clients port + 10000, so you can specify any port and bus-port depending
-# on how they get remapped. If the bus-port is not set, a fixed offset of
-# 10000 will be used as usual.
-#
-# Example:
-#
+########################## 端口转发/NAT支持  ########################
+# 在典型环境中，Redis 集群节点会自动检测自己的地址和端口，并通过集群消息总线向其他节点和客户端发布。
+# 在某些情况下，自动检测会失败，例如：
+# 节点的实际地址被 NAT 映射到另一个地址。
+# 端口被重新映射（例如，宿主机和容器的端口不一致）。
+# TLS 和非 TLS 连接存在不同的公开端口。
+# 为了应对这些问题，可以通过静态配置明确指定节点的公开地址和端口。
+# 
+# 用于指定节点的公开 IP 地址（公网或可被客户端访问的地址）
 # cluster-announce-ip 10.1.1.5
+# 指定 TLS 客户端连接的公开端口
 # cluster-announce-tls-port 6379
+# 指定非 TLS 客户端连接的公开端口
 # cluster-announce-port 0
+# 指定集群消息总线的公开端口，默认情况是当前端口号+10000
 # cluster-announce-bus-port 6380
 
-################################## SLOW LOG ###################################
+################################## 慢查询日志 ###################################
 
-# The Redis Slow Log is a system to log queries that exceeded a specified
-# execution time. The execution time does not include the I/O operations
-# like talking with the client, sending the reply and so forth,
-# but just the time needed to actually execute the command (this is the only
-# stage of command execution where the thread is blocked and can not serve
-# other requests in the meantime).
-#
-# You can configure the slow log with two parameters: one tells Redis
-# what is the execution time, in microseconds, to exceed in order for the
-# command to get logged, and the other parameter is the length of the
-# slow log. When a new command is logged the oldest one is removed from the
-# queue of logged commands.
-
-# The following time is expressed in microseconds, so 1000000 is equivalent
-# to one second. Note that a negative number disables the slow log, while
-# a value of zero forces the logging of every command.
+# 定义记录慢查询日志的时间阈值，单位是微秒us，执行时间超过这个设置时间的命令，将会被记录
 slowlog-log-slower-than 10000
 
-# There is no limit to this length. Just be aware that it will consume memory.
-# You can reclaim memory used by the slow log with SLOWLOG RESET.
+# 定义慢查询日志最多保存的条目数
 slowlog-max-len 128
 
-################################ LATENCY MONITOR ##############################
+################################ 延迟监控 ##############################
 
-# The Redis latency monitoring subsystem samples different operations
-# at runtime in order to collect data related to possible sources of
-# latency of a Redis instance.
-#
-# Via the LATENCY command this information is available to the user that can
-# print graphs and obtain reports.
-#
-# The system only logs operations that were performed in a time equal or
-# greater than the amount of milliseconds specified via the
-# latency-monitor-threshold configuration directive. When its value is set
-# to zero, the latency monitor is turned off.
-#
-# By default latency monitoring is disabled since it is mostly not needed
-# if you don't have latency issues, and collecting data has a performance
-# impact, that while very small, can be measured under big load. Latency
-# monitoring can easily be enabled at runtime using the command
-# "CONFIG SET latency-monitor-threshold <milliseconds>" if needed.
+# 对包括 Redis 命令执行时间、网络延迟、操作系统或硬件层面的执行监控，开销较大，一般关闭。单位毫秒ms
 latency-monitor-threshold 0
 
-################################ LATENCY TRACKING ##############################
-
-# The Redis extended latency monitoring tracks the per command latencies and enables
-# exporting the percentile distribution via the INFO latencystats command,
-# and cumulative latency distributions (histograms) via the LATENCY command.
-#
-# By default, the extended latency monitoring is enabled since the overhead
-# of keeping track of the command latency is very small.
+################################ 拓展延迟监控 ##############################
+# 是否开启，默认开启。会记录每个命令的延迟数据，开销极小
 # latency-tracking yes
 
-# By default the exported latency percentiles via the INFO latencystats command
-# are the p50, p99, and p999.
+# 设置在 INFO latencystats 命令中导出的延迟百分位数
 # latency-tracking-info-percentiles 50 99 99.9
 
-############################# EVENT NOTIFICATION ##############################
 
-# Redis can notify Pub/Sub clients about events happening in the key space.
-# This feature is documented at https://redis.io/topics/notifications
-#
-# For instance if keyspace events notification is enabled, and a client
-# performs a DEL operation on key "foo" stored in the Database 0, two
-# messages will be published via Pub/Sub:
-#
-# PUBLISH __keyspace@0__:foo del
-# PUBLISH __keyevent@0__:del foo
-#
-# It is possible to select the events that Redis will notify among a set
-# of classes. Every class is identified by a single character:
-#
-#  K     Keyspace events, published with __keyspace@<db>__ prefix.
-#  E     Keyevent events, published with __keyevent@<db>__ prefix.
-#  g     Generic commands (non-type specific) like DEL, EXPIRE, RENAME, ...
-#  $     String commands
-#  l     List commands
-#  s     Set commands
-#  h     Hash commands
-#  z     Sorted set commands
-#  x     Expired events (events generated every time a key expires)
-#  e     Evicted events (events generated when a key is evicted for maxmemory)
-#  n     New key events (Note: not included in the 'A' class)
-#  t     Stream commands
-#  d     Module key type events
-#  m     Key-miss events (Note: It is not included in the 'A' class)
-#  A     Alias for g$lshzxetd, so that the "AKE" string means all the events
-#        (Except key-miss events which are excluded from 'A' due to their
-#         unique nature).
-#
-#  The "notify-keyspace-events" takes as argument a string that is composed
-#  of zero or multiple characters. The empty string means that notifications
-#  are disabled.
-#
-#  Example: to enable list and generic events, from the point of view of the
-#           event name, use:
-#
-#  notify-keyspace-events Elg
-#
-#  Example 2: to get the stream of the expired keys subscribing to channel
-#             name __keyevent@0__:expired use:
-#
-#  notify-keyspace-events Ex
-#
-#  By default all notifications are disabled because most users don't need
-#  this feature and the feature has some overhead. Note that if you don't
-#  specify at least one of K or E, no events will be delivered.
+#############################  键空间事件通知 ##############################
+
+# 含义： 配置 Redis 发布哪些键空间事件的通知。
+# 取值： 一个由特定字符组成的字符串，每个字符代表一类事件。常用值说明如下：
+# K：启用键空间事件（__keyspace@<db>__）。
+# E：启用键事件（__keyevent@<db>__）。
+# g：泛型命令（如 DEL、EXPIRE、RENAME）。
+# $：字符串命令（如 SET、GET）。
+# l：列表命令（如 LPUSH、RPUSH）。
+# s：集合命令（如 SADD、SREM）。
+# h：哈希命令（如 HSET、HDEL）。
+# z：有序集合命令（如 ZADD、ZREM）。
+# x：键过期事件。
+# e：键逐出事件（因 maxmemory 限制被逐出）。
+# A：启用所有事件（不包括键未命中 m 和新键创建 n）。
+# 默认值： 空字符串（""），表示事件通知功能关闭。
 notify-keyspace-events ""
 
-############################### ADVANCED CONFIG ###############################
+############################### 高级配置 ###############################
 
 # Hashes are encoded using a memory efficient data structure when they have a
 # small number of entries, and the biggest entry does not exceed a given
@@ -1233,104 +985,37 @@ rdb-save-incremental-fsync yes
 # lfu-log-factor 10
 # lfu-decay-time 1
 
-########################### ACTIVE DEFRAGMENTATION #######################
-#
-# What is active defragmentation?
-# -------------------------------
-#
-# Active (online) defragmentation allows a Redis server to compact the
-# spaces left between small allocations and deallocations of data in memory,
-# thus allowing to reclaim back memory.
-#
-# Fragmentation is a natural process that happens with every allocator (but
-# less so with Jemalloc, fortunately) and certain workloads. Normally a server
-# restart is needed in order to lower the fragmentation, or at least to flush
-# away all the data and create it again. However thanks to this feature
-# implemented by Oran Agra for Redis 4.0 this process can happen at runtime
-# in a "hot" way, while the server is running.
-#
-# Basically when the fragmentation is over a certain level (see the
-# configuration options below) Redis will start to create new copies of the
-# values in contiguous memory regions by exploiting certain specific Jemalloc
-# features (in order to understand if an allocation is causing fragmentation
-# and to allocate it in a better place), and at the same time, will release the
-# old copies of the data. This process, repeated incrementally for all the keys
-# will cause the fragmentation to drop back to normal values.
-#
-# Important things to understand:
-#
-# 1. This feature is disabled by default, and only works if you compiled Redis
-#    to use the copy of Jemalloc we ship with the source code of Redis.
-#    This is the default with Linux builds.
-#
-# 2. You never need to enable this feature if you don't have fragmentation
-#    issues.
-#
-# 3. Once you experience fragmentation, you can enable this feature when
-#    needed with the command "CONFIG SET activedefrag yes".
-#
-# The configuration parameters are able to fine tune the behavior of the
-# defragmentation process. If you are not sure about what they mean it is
-# a good idea to leave the defaults untouched.
+########################### 主动碎片整理 #######################
+#什么是主动碎片整理（Active Defragmentation）？
+# 定义：主动碎片整理是一种在线（online）机制，允许 Redis 在服务器运行时通过重新排列内存中的小分配和释放区域来回收被浪费的内存。
+# 原因：由于内存分配和释放的不均匀性（碎片化），可能导致实际可用内存减少。通常，需要重启 Redis 服务器或重新加载数据来降低碎片化，而主动碎片整理允许在运行时处理这些问题。
+# 实现：
+# Redis 利用 Jemalloc 分配器的特性识别和重新分配导致碎片化的内存块。
+# 通过增量式地对数据重新分配，释放旧的碎片化内存，逐步降低碎片化程度。
 
-# Active defragmentation is disabled by default
+
+# 启用/禁用主动碎片整理，默认值为no不启用
 # activedefrag no
 
-# Minimum amount of fragmentation waste to start active defrag
+# 启动碎片整理的最小内存碎片量（以字节为单位）。如果碎片浪费的内存低于此值，则不会触发碎片整理。
 # active-defrag-ignore-bytes 100mb
 
-# Minimum percentage of fragmentation to start active defrag
+# 启动碎片整理的最小碎片化比例（百分比）。当碎片率超过该值时，Redis 开始进行碎片整理。
 # active-defrag-threshold-lower 10
 
-# Maximum percentage of fragmentation at which we use maximum effort
+# 最大碎片化比例（百分比）。当碎片率达到该值时，Redis 会以最高努力程度进行碎片整理。
 # active-defrag-threshold-upper 100
 
-# Minimal effort for defrag in CPU percentage, to be used when the lower
-# threshold is reached
+# 碎片整理的最小 CPU 使用百分比。当碎片率达到 active-defrag-threshold-lower 时，Redis 使用的最小 CPU 努力。
 # active-defrag-cycle-min 1
 
-# Maximal effort for defrag in CPU percentage, to be used when the upper
-# threshold is reached
+# 碎片整理的最大 CPU 使用百分比。当碎片率达到 active-defrag-threshold-upper 时，Redis 使用的最大 CPU 努力。
 # active-defrag-cycle-max 25
 
-# Maximum number of set/hash/zset/list fields that will be processed from
-# the main dictionary scan
+# 每次扫描的哈希表、集合等数据结构的最大字段数。控制每次整理过程处理的字段数量，以平衡性能和碎片整理的速度。
 # active-defrag-max-scan-fields 1000
 
-# Jemalloc background thread for purging will be enabled by default
+# 是否启用 Jemalloc 的后台线程，用于更高效地释放内存。
 jemalloc-bg-thread yes
-
-# It is possible to pin different threads and processes of Redis to specific
-# CPUs in your system, in order to maximize the performances of the server.
-# This is useful both in order to pin different Redis threads in different
-# CPUs, but also in order to make sure that multiple Redis instances running
-# in the same host will be pinned to different CPUs.
-#
-# Normally you can do this using the "taskset" command, however it is also
-# possible to this via Redis configuration directly, both in Linux and FreeBSD.
-#
-# You can pin the server/IO threads, bio threads, aof rewrite child process, and
-# the bgsave child process. The syntax to specify the cpu list is the same as
-# the taskset command:
-#
-# Set redis server/io threads to cpu affinity 0,2,4,6:
-# server_cpulist 0-7:2
-#
-# Set bio threads to cpu affinity 1,3:
-# bio_cpulist 1,3
-#
-# Set aof rewrite child process to cpu affinity 8,9,10,11:
-# aof_rewrite_cpulist 8-11
-#
-# Set bgsave child process to cpu affinity 1,10,11
-# bgsave_cpulist 1,10-11
-
-# In some cases redis will emit warnings and even refuse to start if it detects
-# that the system is in bad state, it is possible to suppress these warnings
-# by setting the following config which takes a space delimited list of warnings
-# to suppress
-#
-# ignore-warnings ARM64-COW-BUG
-
 ```
 
