@@ -1518,7 +1518,33 @@ master如果配置了requirepass参数，需要密码登录，那么slave就要�
 
 #### 哨兵运行流程和选举原理：
 
+当一个主从配置中的master失效后，哨兵可以选举出一个新的master用于自动接替原master的工作，主从配置中的其他redis服务器自动只想新的master同步数据。一般建议哨兵采用奇数台，防止某一台哨兵无法连接到master导致误切换。
 
+
+
+##### 主观下线SDown：
+
+单个哨兵自己主观上检测master的状态，从哨兵角度来看：发送ping心跳后没有回应就达到了主管下线SDown的条件。
+
+在配置文件中配置了判断主管下线的时间：`sentinel down-after-milliseconds mymaster 30000`默认30s
+
+
+
+##### 客观下线ODown：
+
+多个哨兵通过协商达成一定意见后才能将一个master节点转为客观下线状态。需要哨兵数也在配置文件中配置：`sentinel monitor mymaster 127.0.0.1 6379 2`
+
+
+
+##### 哨兵中选出Leader：
+
+当master客观下线时，哨兵群会选择出一个哨兵Leader 进行<font color="blue">故障迁移</font>：对从节点进行操作，选出一个新master。
+
+选举出leader哨兵的算法：RAFT算法
+
+
+
+##### leader哨兵进行故障转移：
 
 
 
