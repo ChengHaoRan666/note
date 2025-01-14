@@ -1546,9 +1546,37 @@ master如果配置了requirepass参数，需要密码登录，那么slave就要�
 
 ##### leader哨兵进行故障转移：
 
+![slave节点选择](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/slave节点选择.6pnll6l5qc.webp)
+
+1. 先比较优先级，谁的优先级高就选谁做master。一样的情况下向下判断。
+   优先级由`replica-priority 100`指定，值越小，优先级越高。
+2. 再比较复制偏移量，谁大选谁做master。一样的情况下向下判断。
+3. 在比较RunID，谁小选谁。
 
 
 
+得到新的节点后：
+
+1. leader 哨兵会对选举出的新 master 执行 `slaveof no one` 操作，将其提升为 master 节点
+2. leader 哨兵向其它 slave 发送命令，让剩余的 slave 成为新 master 节点的 slave
+
+
+
+leader哨兵会更新所有哨兵的配置文件，广播新master的信息。如果配置了 `notification-script` 或 `client-reconfig-script`会通知系统管理员或客户端。
+
+
+
+
+
+
+
+#### 哨兵使用建议：
+
+- 哨兵节点的数量应为多个，哨兵本身应该集群，保证高可用
+- 哨兵节点的数量应该是奇数
+- 各个哨兵节点的配置应一致
+- 如果哨兵节点部署在 Docker 等容器里面，尤其要注意端口的正确映射
+- 哨兵集群 + 主从复制，并不能保证数据零丢失
 
 
 
