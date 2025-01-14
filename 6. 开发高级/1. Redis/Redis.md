@@ -1495,11 +1495,20 @@ master如果配置了requirepass参数，需要密码登录，那么slave就要�
 
 哨兵配置（sentinel.conf文件配置）：
 
-1. 
+1. 配置监听端口bind
+1. 开启进程守护daemonize yes
+1. 关闭保护模式protected-mode no
+1. 设置端口prot 26379
+1. 设置日志目录logfile
+1. 设置pid目录pidfile
+1. 绑定节点 sentinel monitor mymaster 127.0.0.1 6379 2
+1. 设置连接密码  sentinel auth-pass \<master-name> \<password>
 
 
 
+#### 启动哨兵：
 
+> redis-sentinel sentinel.conf --sentinel
 
 
 
