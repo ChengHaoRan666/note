@@ -1510,6 +1510,16 @@ master如果配置了requirepass参数，需要密码登录，那么slave就要�
 
 > redis-sentinel sentinel.conf --sentinel
 
+<font color="red">启动哨兵后实现了自动化启动，选举。在这个过程中配置文件会被哨兵修改</font>
+
+
+
+
+
+#### 哨兵运行流程和选举原理：
+
+
+
 
 
 
