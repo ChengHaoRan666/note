@@ -1590,6 +1590,8 @@ leader哨兵会更新所有哨兵的配置文件，广播新master的信息。�
 
 
 
+
+
 ## 8. SpringBoot整合redis
 
 
