@@ -1374,7 +1374,7 @@ master如果配置了requirepass参数，需要密码登录，那么slave就要�
 6. pid文件名字，pidfile
 7. log文件名字，logfile（日志文件地址）
 8. requirepass（设置连接Redis服务器时需要提供的密码）
-9. dump.rdb名字（指定Redis的RDB持久化文件的名称。RDB文件用于在指定的时间间隔内保存数据快照）
+9. dump.rdb名字（指定Redis的RDB持久化文件的名称）
 10. aof文件，appendfilename（指定Redis的AOF（Append Only File）持久化文件的名称）
 11. <font color="red">从机访问主机的通行密码masterauth，必须</font>
 11. <font color="red">指定主库IP replicaof 主库IP  主库端口（一般写入redis.conf配置文件中）</font>
@@ -1474,7 +1474,7 @@ master如果配置了requirepass参数，需要密码登录，那么slave就要�
 
 > 采用三个哨兵，一主二从架构。六台机器
 
-基本配置：
+基本配置（redis.conf配置）：
 
 1. 开启daemonize yes（开启进程守护，当终端关闭时redis也在运行）
 2. 注释bind 127.0.0.1（允许其他ip连接）
@@ -1487,13 +1487,13 @@ master如果配置了requirepass参数，需要密码登录，那么slave就要�
 9. dump.rdb名字（指定Redis的RDB持久化文件的名称。）
 10. aof文件，appendfilename（指定Redis的AOF（Append Only File）持久化文件的名称）
 
-主从配置：
+主从配置（从节点redis.conf文件配置）：
 
 1. 从机访问主机的通行密码masterauth，必须
 
 2. 指定主库IP replicaof 主库IP  主库端口（一般写入redis.conf配置文件中）
 
-哨兵配置：
+哨兵配置（sentinel.conf文件配置）：
 
 1. 
 
