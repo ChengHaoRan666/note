@@ -1459,9 +1459,13 @@ master如果配置了requirepass参数，需要密码登录，那么slave就要�
 
 哨兵监控室吹哨人巡查监控后台master主机是否故障，如果故障根据<font color="red">投票数</font>自动将某一个从库转为新主库，继续对外服务。
 
+![redis哨兵](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/redis哨兵.26lkjenc1l.jpg)
 
 
-#### 作用：
+
+
+
+#### 能干什么：
 
 1. 主从监控：监控主从redis库是否运行正常。
 2. 消息通知：哨兵可以将故障转移的结果发送给客户端。
@@ -1584,7 +1588,25 @@ leader哨兵会更新所有哨兵的配置文件，广播新master的信息。�
 
 ## 7. redis集群 cluster
 
+#### 是什么：
 
+在主从复制+哨兵的操作方式中，都是一台master进行处理，如果主节点挂了，即使采用哨兵自动升级子节点，也会有一段时间的操作没有处理到。对此集群方式将所有数据不再一台机器上，而是每台机器只存有部分数据。
+
+
+![redis集群](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/redis集群.esloi3z5k.jpg)
+
+集群模式几乎完全替代了哨兵模式，当M1挂了后，可以由M2，M3提供服务，S1还可以顶替M1。
+
+> redis集群是一个提供在多个Redis节点间共享数据的数据集，redis集群可以支持多个Master
+
+
+
+#### 能干什么：
+
+1. Redis集群支持多个Master，每个Master又可以挂载多个Slave，从而实现了读写分离，支持数据的高可用，支持海量数据的读写存储操作。
+2. 由于集群自带哨兵的故障转移机制，内置了高可用的支持，<font color="red">无序再使用哨兵功能</font>
+3. 客户端与Redis的节点连接，不再需要连接集群中所有节点，只需要任意连接集群中的一个可用节点即可。
+4. <font color="red">槽位slot</font>负责分配到各个物理服务节点，由对应的集群来负责维护节点，插槽和数据之间的关系。
 
 
 
