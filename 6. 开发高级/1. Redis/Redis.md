@@ -1717,6 +1717,52 @@ Redis主节点的配置信息中它所负责的哈希槽是通过一张bitmap的
 
 ![redis集群](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/redis集群.esloi3z5k.jpg)
 
+##### 搭建三主三从架构：
+
+1. 配置三个主节点从节点配置：
+   <font color="red">三个主节点和三个从节点配置一样的，不需要从节点配置replicaof</font>
+
+   > bind 0.0.0.0
+   > daemonize yes
+   > protected-mode no
+   > port 6381
+   > logfile "/myredis/cluster/cluster6381.log"
+   > pidfile /myredis/cluster6381.pid
+   > dir /myredis/cluster
+   > dbfilename dump6381.rdb
+   > appendonly yes
+   > appendfilename "appendonly6381.aof"
+   > requirepass 111111
+   > masterauth 111111
+   >
+   > cluster-enabled yes // 开启集群模式
+   > cluster-config-file nodes-6381.conf //指定集群节点配置文件（保存当前节点状态，自动生成，不要手动编辑）
+   > cluster-node-timeout 5000 // 集群超时时间（以毫秒为单位）
+
+2. 启动六台redis
+
+3. 通过`redis-cli`命令为6台机器构建集群关系
+
+   > redis-cli -a 111111 --cluster create --cluster-replicas 1 \
+   > 192.168.111.175:6381 192.168.111.175:6382 \
+   > 192.168.111.172:6383 192.168.111.172:6384 \
+   > 192.168.111.174:6385 192.168.111.174:6386
+   >
+   > -a：密码
+   > --cluster create ：表示要创建集群
+   > --cluster-replicas 1：指定每个主节点有多少个从节点
+
+4. 查看节点状态
+   `info replication`：查看一个节点的主从关系。
+   `cluster info`：用于查看整个 Redis 集群的状态信息。
+   `cluster nodes`：用于查看集群中所有节点的详细信息，包括节点的角色、状态、槽位分配情况等。
+
+
+
+##### 读写操作：
+
+如果只是完成上面配置，
+
 
 
 
