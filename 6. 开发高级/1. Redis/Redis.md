@@ -1773,7 +1773,37 @@ Redis主节点的配置信息中它所负责的哈希槽是通过一张bitmap的
 
 
 
+##### 主从容错切换：
 
+主节点down掉之后，从节点会自动上位成为主节点。
+
+从节点上位后，原本主节点再加入集群后会作为从节点，成为三主三从。
+
+节点从属调整：在从节点执行`CLUSTER FAILOVER`指令实现主从节点平稳调整
+
+
+
+##### 主从扩展：
+
+1. 新开两台redis，一台作为主节点，一台作为从节点。分别启动。
+2. 将新增的主节点加入原有集群`redis-cli -a 密码 --cluster add-node 新增主节点IP：端口号  集群主节点IP：端口号`
+3. 通过`redis-cli -a 密码 --cluster check IP：prot`查看哈希槽分配情况。这时加入的新节点并没有哈希槽。
+4. 重新分派槽号命令:`redis-cli -a 密码 --cluster reshard IP地址:端口号`
+5. 再次查看哈希槽分配情况。
+6. 为新加入主节点分配从节点，`redis-cli -a 密码 --cluster add-node ip:新slave端口 ip:新master端口 --cluster-slave --cluster-master-id 新主机节点ID`
+
+> 在第三步时，新节点加入并没有槽位，通过分配槽位命令才有了槽位。这个槽位并不是所有主节点进行重新分配，这样代价太大，而是有槽位的主节点每个分出一个区间给新节点，也就是说新节点的槽位不是连续的。
+
+
+
+##### 主从缩容：
+
+清除一个主节点和对应的从节点。
+
+1. 先获取从节点的ID `redis-cli -a 密码 --cluster check IP：prot`
+2. 在集群中将从节点删除  `redis-cli -a 密码 --cluster del-node 从机 ip:从机端口 从机节点ID`
+3. 将主节点的槽位进行分配给其他主节点`redis-cli -a 111111 --cluster reshard 待删除主节点IP：prot`，会提示是否删除和输入接收槽位的主节点ID
+4. 删除主节点  `redis-cli -a 密码 --cluster del-node 主机 ip:主机端口 主机节点ID`
 
 
 
