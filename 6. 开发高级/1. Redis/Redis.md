@@ -1819,5 +1819,26 @@ Redis主节点的配置信息中它所负责的哈希槽是通过一张bitmap的
 
 ## 8. SpringBoot整合redis
 
+#### 1. jedis
 
+最老牌的
+
+
+
+#### 2. lettuce
+
+改善了jedis的bug
+
+
+
+#### 3.RedisTemplate
+
+<font color="red">SpringBoot推荐使用这个，整合了上面两个，再做了一个封装</font>
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-redis</artifactId>
+</dependency>
+```
 
