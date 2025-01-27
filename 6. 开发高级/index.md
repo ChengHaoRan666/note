@@ -6,8 +6,6 @@ springcloud黑马  12h
 
 rabbitMQ  6.5h
 
-redis  5天
-
 
 
 #### springcloud尚硅谷 23h
