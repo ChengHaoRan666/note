@@ -1,4 +1,17 @@
-## 	1. Redis十大数据类型
+## 0. redis安装
+
+1. 到redis官网下载文件：redis-7.0.1.tar.gz
+2. 将文件移动到Linux里的一个文件下
+3. 使用`tar -zvxf redis-7.0.1.tar.gz`命令解压文件到当前文件夹
+4. 到解压的文件夹内，使用`make`指令进行编译命令
+
+
+
+
+
+
+
+## 	1. redis十大数据类型
 
 ![redis类型](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/redis类型.8adawc2ojw.webp)
 
