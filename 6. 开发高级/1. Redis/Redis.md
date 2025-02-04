@@ -1,11 +1,10 @@
 ## 0. redis安装
 
-1. 到redis官网下载文件：redis-7.0.1.tar.gz
+1. 到[redis官网](https://redis.io/downloads/)下载文件：redis-7.0.1.tar.gz
 2. 将文件移动到Linux里的一个文件下
 3. 使用`tar -zvxf redis-7.0.1.tar.gz`命令解压文件到当前文件夹
 4. 到解压的文件夹内，使用`make`指令进行编译命令
-
-
+5. 用`./redis-server& ./redis.conf`后台启动
 
 
 
