@@ -84,3 +84,5 @@ Ubuntu 22.04 64位安装Docker：
 > docker tag mynginx:v1.0 leifengyang/mynginx:v1.0
 > #推送镜像
 > docker push leifengyang/mynginx:v1.0
+
+ 
