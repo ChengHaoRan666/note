@@ -95,3 +95,21 @@ Ubuntu 22.04 64位安装Docker：
 
 ## 3. 存储
 
+在使用`docker run`命令创建并启动一个docker容器时可以使用`-v`进行挂载或映射。
+
+- 目录挂载： `-v /app/nghtml:/usr/share/nginx/html`
+- 卷映射：`-v ngconf:/etc/nginx`
+
+> 目录挂载：在外部创建一个文件夹或者文件（如果没有的话），使用它代替容器内部的那个文件夹或者文件。
+>
+> 卷映射：在外部创建一个文件夹或者文件，内容和容器内对应的内容一致。用外部的代替内部的文件夹或者文件。
+
+> 卷映射docker统一存放在一个位置：/var/lib/docker/volumes/<volume-name\>
+
+1. `docker volume ls`可以查看所有卷
+2. `docker volume create 卷名`手动创建卷
+3. `docker volume inspect 卷名`查看卷的详细信息
+
+
+
+## 4. 网络
