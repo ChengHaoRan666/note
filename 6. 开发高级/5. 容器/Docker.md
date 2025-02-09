@@ -109,12 +109,30 @@ Ubuntu 22.04 64位安装Docker：
 1. `docker volume ls`可以查看所有卷
 2. `docker volume create 卷名`手动创建卷
 3. `docker volume inspect 卷名`查看卷的详细信息
+3. `docker volume rm 卷名`删除卷
 
 
 
 ## 4. 网络
 
+#### 方法一：ip访问
 
+容器之间进行网络通讯，可以直接在机器内部进行通讯。docker为每个容器分配了唯一ip，使用容器ip+容器端口可以相互访问。
+
+
+
+#### 方法二：域名访问
+
+使用ip访问存在一定问题：如果容器有变化那么无法正确访问。可以采用域名访问方式。
+
+docker0默认不支持主机域名，需要自己创建自定义网络，容器名就是稳定域名。
+
+1. `docker network ls` 查看docker网络
+2. `docker network create <网络名>`创建docker网络
+3. `docker network connect <网络名> <容器名或ID>`将容器加入到这个网络中
+4. `docker network disconnect <网络名> <容器名或ID>`断开容器网络
+
+> 在创建容器时可以使用`--network 网络名`将容器加入网络中
 
 
 
