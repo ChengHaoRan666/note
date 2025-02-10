@@ -1,10 +1,10 @@
 springcloud尚硅谷  23h
 
+SpringCloud7小时速通 7h
+
 dubbo   4.5h
 
 rabbitMQ  6.5h
-
-Docker 3h
 
 
 
