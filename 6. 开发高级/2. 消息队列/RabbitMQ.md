@@ -483,13 +483,68 @@ public class publisher {
 
 
 
+
+
 ## 6. 声明交换机和队列的方式
 
 ### 1.  手动在web端声明（不推荐）
 
 ### 2.Java代码声明（推荐）
 
-### 2.1 
+#### 2.1 写配置类（不推荐）
+
+```java
+package com.chr.rabbitmq.config;
+
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.FanoutExchange;
+import org.springframework.amqp.core.Queue;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+/**
+ * @Author: 程浩然
+ * @Create: 2025/2/17 - 21:09
+ * @Description: fanout交换机和队列配置
+ */
+@Configuration
+public class FanoutConfiguration {
+    @Bean
+    public FanoutExchange fanoutExchange() {
+//        return ExchangeBuilder.fanoutExchange("fanout2").build();
+        return new FanoutExchange("fanout2");
+    }
+
+    @Bean
+    public Queue fanoutQueue() {
+//        return QueueBuilder.durable("name").build(); // 持久化的
+//        return QueueBuilder.nonDurable("name").build(); // 一次性的
+        return new Queue("name");
+    }
+
+    @Bean
+    public Binding fanoutBinding(Queue fanoutQueue, FanoutExchange fanoutExchange) {
+        return BindingBuilder.bind(fanoutQueue).to(fanoutExchange);
+    }
+}
+```
+
+
+
+#### 2.2 写注解
+
+```java
+@RabbitListener(bindings = @QueueBinding(
+            value = @Queue(value = "queue_name", durable = "true"),
+            exchange = @Exchange(value = "exchange_name", type = ExchangeTypes.DIRECT),
+            key = {"red", "blue"}
+    ))
+```
+
+
+
+## 7. 消息转换器
 
 
 
@@ -517,3 +572,18 @@ public class publisher {
 - **Direct**：基于路由键（routing key）进行精确匹配。如果路由键与绑定键完全相同，消息就会被路由到相应的队列。
 - **Topic**：基于路由键进行模式匹配。路由键可以使用通配符（如`*`匹配一个单词，`#`匹配零个或多个单词），从而实现更灵活的路由。
 - **Fanout**：不基于路由键进行路由，而是将消息广播到所有绑定的队列，无论路由键是什么。
+
+
+
+#### 申明交换机和队列的方式：
+
+申明交换机和队列的方式是在消费者上配置，生产者无需关心交换机和队列。
+
+配置类声明总结：
+
+1. 每一个交换机和队列的组合都需要写一个交换机，一个队列，一个连接。
+2. 交换机可以重复。
+
+注解配置总结：
+
+1. 一次只能配置一个交换机和一个队列和多个Routing key
