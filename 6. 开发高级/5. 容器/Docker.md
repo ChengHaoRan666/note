@@ -7,6 +7,9 @@ Ubuntu 22.04 64位安装Docker：
 3. `sudo systemctl enable --now docker`设置开机自启
 4. `sudo systemctl status docker`检查运行状态
 5. 配置镜像加速，参考网站：[阿里云镜像加速器](https://cr.console.aliyun.com/cn-hangzhou/instances/mirrors)
+
+   > 其他加速方式：
+   > https://github.com/DaoCloud/public-image-mirror/issues/2328
 6. `sudo docker run hello-world` 测试Docker是否安装成功
 
 
@@ -70,7 +73,7 @@ Ubuntu 22.04 64位安装Docker：
 6. `docker restart 容器名字[容器ID]` 重启容器
 7. `docker stats 容器名字[容器ID]` 查看容器状态
 8.  `docker logs 容器名字[容器ID]` 查看容器日志
-9. `docker exec 容器名字[容器ID]` 进入容器
+9. `docker exec 容器名字[容器ID] sh/bash` 进入容器
 10. `docker rm 容器名字[容器ID]` 删除容器
 
 
@@ -132,6 +135,7 @@ docker0默认不支持主机域名，需要自己创建自定义网络，容器�
 2. `docker network create <网络名>`创建docker网络
 3. `docker network connect <网络名> <容器名或ID>`将容器加入到这个网络中
 4. `docker network disconnect <网络名> <容器名或ID>`断开容器网络
+4. `docker network inspect <网络名>`查看网络详细状态
 
 > 在创建容器时可以使用`--network 网络名`将容器加入网络中
 
@@ -227,7 +231,7 @@ Dockerfile 是一个用于定义 Docker 镜像的文本文件，包含一系列�
 
 Dockerfile 主要作用 ：
 
-- 自动化构建镜像：通过 docker build 命令，根据 Dockerfile 创建自定义镜像。 
+- 自动化构建镜像：通过 `docker build` 命令，根据 Dockerfile 创建自定义镜像。 
 - 保证环境一致性：开发、测试、生产环境使用相同的容器镜像，避免“本地可以运行，服务器不能运行”的问题。 
 - 提升部署效率：通过 Docker Hub 或私有仓库共享镜像，实现快速部署。
 
@@ -310,7 +314,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
 
   mysql:
-    image: mysql:8.0.31
+    image: mysql:8.0.41
     restart: always
     container_name: mysql
     environment:
@@ -540,5 +544,23 @@ volumes:
   prometheus-data:
   prometheus-conf:
   grafana-data:
+```
+
+
+
+
+
+## 八. 实践
+
+```shell
+docker run --name mysql -v /home/www/mysql_data:/var/lib/mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=chr@4521 --network blog  -d mysql:8.0.41 
+```
+
+```shell
+docker run \
+> -p 80:80 \
+> --name blog_jar \
+> --network blog \
+> -d blog
 ```
 
