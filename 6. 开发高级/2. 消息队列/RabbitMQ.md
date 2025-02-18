@@ -157,7 +157,7 @@ public class Recv {
 
 ## 4. 数据隔离
 
-可以在web控制台创建虚拟主机并设置其所属用户。在发送时可以选择虚拟主机进行数据隔离。
+可以在web控制台创建==虚拟主机==并设置其所属用户。在发送时可以选择虚拟主机进行数据隔离。
 
 
 
@@ -546,6 +546,64 @@ public class FanoutConfiguration {
 
 ## 7. 消息转换器
 
+​	当不设置消息转换器时，发送复杂数据类型（Map，Set等）会造成乱码。当使用监听器监听时会报错：
+
+```text
+2025-02-18T08:21:54.992+08:00  INFO 12904 --- [rabbitMQ] [ntContainer#2-2] o.s.a.r.l.SimpleMessageListenerContainer : Waiting for workers to finish.
+2025-02-18T08:21:55.022+08:00  WARN 12904 --- [rabbitMQ] [ntContainer#4-1] s.a.r.l.ConditionalRejectingErrorHandler : Execution of Rabbit message listener failed.
+
+org.springframework.amqp.rabbit.support.ListenerExecutionFailedException: Failed to convert message
+	at org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter.onMessage(MessagingMessageListenerAdapter.java:157) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.doInvokeListener(AbstractMessageListenerContainer.java:1682) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.actualInvokeListener(AbstractMessageListenerContainer.java:1604) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.invokeListener(AbstractMessageListenerContainer.java:1592) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.doExecuteListener(AbstractMessageListenerContainer.java:1583) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.executeListenerAndHandleException(AbstractMessageListenerContainer.java:1528) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.lambda$executeListener$8(AbstractMessageListenerContainer.java:1506) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	at io.micrometer.observation.Observation.observe(Observation.java:498) ~[micrometer-observation-1.14.3.jar:1.14.3]
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.executeListener(AbstractMessageListenerContainer.java:1506) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer.doReceiveAndExecute(SimpleMessageListenerContainer.java:1086) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer.receiveAndExecute(SimpleMessageListenerContainer.java:1022) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer$AsyncMessageProcessingConsumer.mainLoop(SimpleMessageListenerContainer.java:1425) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer$AsyncMessageProcessingConsumer.run(SimpleMessageListenerContainer.java:1326) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	at java.base/java.lang.Thread.run(Thread.java:833) ~[na:na]
+Caused by: java.lang.SecurityException: Attempt to deserialize unauthorized class java.util.HashMap; add allowed class name patterns to the message converter or, if you trust the message originator, set environment variable 'SPRING_AMQP_DESERIALIZATION_TRUST_ALL' or system property 'spring.amqp.deserialization.trust.all' to true
+	at org.springframework.amqp.utils.SerializationUtils.checkAllowedList(SerializationUtils.java:164) ~[spring-amqp-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.support.converter.AllowedListDeserializingMessageConverter.checkAllowedList(AllowedListDeserializingMessageConverter.java:62) ~[spring-amqp-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.support.converter.SimpleMessageConverter$1.resolveClass(SimpleMessageConverter.java:160) ~[spring-amqp-3.2.2.jar:3.2.2]
+	at java.base/java.io.ObjectInputStream.readNonProxyDesc(ObjectInputStream.java:2069) ~[na:na]
+	at java.base/java.io.ObjectInputStream.readClassDesc(ObjectInputStream.java:1933) ~[na:na]
+	at java.base/java.io.ObjectInputStream.readOrdinaryObject(ObjectInputStream.java:2259) ~[na:na]
+	at java.base/java.io.ObjectInputStream.readObject0(ObjectInputStream.java:1768) ~[na:na]
+	at java.base/java.io.ObjectInputStream.readObject(ObjectInputStream.java:543) ~[na:na]
+	at java.base/java.io.ObjectInputStream.readObject(ObjectInputStream.java:501) ~[na:na]
+	at org.springframework.amqp.utils.SerializationUtils.deserialize(SerializationUtils.java:102) ~[spring-amqp-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.support.converter.SimpleMessageConverter.fromMessage(SimpleMessageConverter.java:93) ~[spring-amqp-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.rabbit.listener.adapter.AbstractAdaptableMessageListener.extractMessage(AbstractAdaptableMessageListener.java:350) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter$MessagingMessageConverterAdapter.extractPayload(MessagingMessageListenerAdapter.java:378) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.support.converter.MessagingMessageConverter.fromMessage(MessagingMessageConverter.java:132) ~[spring-amqp-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter.toMessagingMessage(MessagingMessageListenerAdapter.java:251) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	at org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter.onMessage(MessagingMessageListenerAdapter.java:147) ~[spring-rabbit-3.2.2.jar:3.2.2]
+	... 13 common frames omitted
+```
+
+Spring AMQP不允许反序列化部分数据结构，接收时会报错。这时候需要我们自己自定义消息转换器，让rabbitMQ能够传输一些复杂数据类型。
+
+```java
+// 配置json序列化
+@Bean
+public MessageConverter jacksonConverter() {
+    return new Jackson2JsonMessageConverter();
+}
+```
+
+```xml
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.17.2</version>
+</dependency>
+```
 
 
 
@@ -554,7 +612,8 @@ public class FanoutConfiguration {
 
 
 
-## 总结
+
+## 初级总结
 
 #### 流程：
 
@@ -587,3 +646,8 @@ public class FanoutConfiguration {
 注解配置总结：
 
 1. 一次只能配置一个交换机和一个队列和多个Routing key
+
+
+
+## 8. 生产者可靠性
+
