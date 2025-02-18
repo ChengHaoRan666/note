@@ -651,3 +651,47 @@ public MessageConverter jacksonConverter() {
 
 ## 8. 生产者可靠性
 
+生产者可靠性：生产者向MQ发送消息保证成功。
+
+### 8.1 生产者重连
+
+通过配置设置客户端连接MQ失败后的重连。
+
+```yaml
+spring:
+	rabbitmq:
+        connection-timeout: 1s # 设置MQ连接超时的时间
+        template:
+          retry:
+            enabled: true # 开启超时重连机制
+            initial-interval: 1000ms # 失败后的初始等待时间
+            multiplier: 1 # 失败后下次等待时长倍数，下次等待时间：initial-interval * multiplier
+            max-attempts: 3 # 最大重连次数
+```
+
+> 重连是阻塞性的，会影响rabbitMQ的性能，建议配置合理的参数或者不开启重连机制
+
+
+
+### 8.2 生产者确认
+
+1. 消息到达了MQ，但是路由失败（一般是rounting key的值对不上）会return路由异常原因，返回`ACK`
+2. 临时消息投递到MQ，并且入队成功，返回`ACK`
+3. 持久化消息投递到MQ，并且入队成功且完成持久化，返回`ACK`
+4. 其他情况都返回`NACK`，告知发送失败
+
+
+
+## 9. MQ可靠性
+
+
+
+
+
+## 10. 消费者可靠性
+
+
+
+
+
+## 11. 延迟消息
