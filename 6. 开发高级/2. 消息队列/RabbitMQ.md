@@ -777,3 +777,118 @@ spring:
 
 
 ## 11. 延迟消息
+
+在实际业务中可能需要各种消息延迟发送，消费者在一段时间后才收到消息，这时候就需要用到延迟消息。
+
+延迟消息可以有两种方式实现：
+
+1. 死信队列
+2. 延迟插件
+
+
+
+### 11.1 死信队列
+
+变成死信的条件：
+
+1. 消息被拒绝
+2. 消息过期
+3. 队列长度满了
+
+> 死信队列和其他队列功能一样的，只是队列设置了`x-dead-letter-exchange`参数，指定死信交换机
+
+![延迟消息](https://raw.githubusercontent.com/ChengHaoRan666/picx-images-hosting/refs/heads/master/%E5%BB%B6%E8%BF%9F%E6%B6%88%E6%81%AF.3d4x5q1q7r.webp)
+
+
+
+注解设置死信交换机：
+
+```java
+@RabbitListener(bindings = @QueueBinding(
+    value = @Queue(name = "DelayMessage.queue", durable = "true", arguments = {
+        @Argument(name = "x-dead-letter-exchange", value = "dlx.direct")
+    }),
+    exchange = @Exchange(name = "DelayMessage.exchange", type = ExchangeTypes.HEADERS),
+    key = {}
+))
+```
+
+在队列中设置参数`arguments`，在其中指定死信交换机
+
+```java
+package com.chr.rabbitmq.DelayMessage;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.ExchangeTypes;
+import org.springframework.amqp.rabbit.annotation.*;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * @Author: 程浩然
+ * @Create: 2025/2/17 - 14:13
+ * @Description: 延迟消息 消费者
+ */
+@RestController("DelayMessage_consumer2")
+@Slf4j
+public class consumer {
+    @RabbitListener(bindings = {
+            @QueueBinding(
+                    value = @Queue(name = "DelayMessage.queue", durable = "true", arguments = {
+                            @Argument(name = "x-dead-letter-exchange", value = "dlx.direct"),
+                            @Argument(name = "x-message-ttl", value = "10000", type = "java.lang.Integer")//设置队列的生存时间，超过就死信
+                    }),
+                    exchange = @Exchange(name = "DelayMessage.exchange", type = ExchangeTypes.HEADERS),
+                    key = {}
+            ),
+            @QueueBinding(
+                    value = @Queue(name = "dlx.queue", durable = "true"),
+                    exchange = @Exchange(name = "dlx.direct", type = ExchangeTypes.HEADERS),
+                    key = {}
+            )
+    })
+    public void consumer(String msg) {
+        log.info("延迟消息 死信交换机读取到的消息队列中信息为: " + msg);
+    }
+}
+```
+
+```java
+package com.chr.rabbitmq.DelayMessage;
+
+import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * @Author: 程浩然
+ * @Create: 2025/2/19 - 10:37
+ * @Description: 延迟消息 生产者
+ */
+@RestController("DelayMessage_publisher")
+@Slf4j
+public class publisher {
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    @RequestMapping("DelayMessage")
+    public String publisher() {
+        String exchange = "DelayMessage.exchange"; // 交换机
+        String routingKey = "#.#"; // 路由键
+        String message = "延迟消息发送"; // 信息
+        rabbitTemplate.convertAndSend(exchange, routingKey, message);
+        log.info("延迟消息已发送");
+        return "已发送";
+    }
+}
+```
+
+> 用注解创建交换机或队列时，使用`arguments`参数指定传入参数
+
+
+
+### 11.2 延迟插件
+
+死信交换机本质不是为了实现延迟消息发送的，是为了可靠性的兜底方案，延迟插件是专门用来实现延迟发送的。
