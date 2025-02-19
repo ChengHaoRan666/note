@@ -753,7 +753,24 @@ springAMQP已经实现了消费者应答机制，只需要设置spring会根据�
 
 当消息发送给消费者，消费者接收失败返回 NACK 后，队列会再次发送，在极端情况下，队列会一直向消费者发送消息，极大占用资源，需要进行失败处理。
 
-我们可以配置
+我们可以配置spring中接收者的配置项
+
+```yaml
+spring:
+  rabbitmq:
+    listener:
+      simple:
+        prefetch: 1 # 预取值
+        acknowledge-mode: auto # 开启消费者确认机制，模式设置为自动确认（由spring判断发送）
+        retry:
+          enabled: true # 开启消费者失败重试
+          initial-interval: 5000ms # 设置初始失败等待时长为 5 秒
+          multiplier: 1 # 失败的等待时长倍数
+          max-attempts: 3 # 最大重试次数
+          stateless: true # 无状态,如果业务中有失误设置为false
+```
+
+这样失败了只会进行有限次尝试，如果还不成功就将队列中的消息删除
 
 
 
