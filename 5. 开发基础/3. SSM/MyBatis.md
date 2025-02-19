@@ -1047,7 +1047,7 @@ select id,user_name,password,age,sex;
 
 
 
-### 2. 多对一映射处理<TODO>
+### 2. 多对一映射处理
 
 1. 级联查询处理映射关系
 
@@ -1120,7 +1120,7 @@ select id,user_name,password,age,sex;
 
 
 
-### 3. 一对多映射处理<TODO>
+### 3. 一对多映射处理
 
 ```xml
 <resultMap id="deptEmpStep" type="Dept">
