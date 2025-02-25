@@ -1,7 +1,6 @@
 ## 0. RabbitMQ安装
 
 1. `docker pull rabbitmq:3.8-management`安装
-
 2. `docker run -d --name rabbitmq \`
     `-e RABBITMQ_DEFAULT_USER=admin \ `
     `-e RABBITMQ_DEFAULT_PASS=admin \ `
@@ -9,7 +8,9 @@
     `-p 5672:5672 \`
     `-p 61613:61613 \`
     `-p 1883:1883 \`
-    `rabbitmq:3.8-management `
+    `-v mq-plugins:/plugins \`
+    `-hostname rabbitmq \`
+     `rabbitmq:3.8-management `
 
 > 开放端口作用：
 >
@@ -163,7 +164,7 @@ public class Recv {
 
 ## 5. Java客户端
 
-Spring有集成的rabbitMQ：[Maven](https://mvnrepository.com/artifact/com.rabbitmq/amqp-client)
+Spring有集成的rabbitMQ：[Maven地址](https://mvnrepository.com/artifact/com.rabbitmq/amqp-client)
 
 在使用前需要先加载`spring-boot-starter-amqp`
 
@@ -892,3 +893,111 @@ public class publisher {
 ### 11.2 延迟插件
 
 死信交换机本质不是为了实现延迟消息发送的，是为了可靠性的兜底方案，延迟插件是专门用来实现延迟发送的。
+
+插件下载地址：[下载地址](https://github.com/rabbitmq/rabbitmq-delayed-message-exchange)
+
+设置rabbitMQ的目录挂载：`/var/lib/docker/volumes/mq-plugins/_data`
+
+接下来执行命令，安装插件：
+
+```shell
+docker exec -it mq rabbitmq-plugins enable rabbitmq_delayed_message_exchange
+```
+
+启动后效果：
+```shell
+root@iZbp16jrgpn579tczps0e4Z:~# docker exec -it rabbitmq rabbitmq-plugins enable rabbitmq_delayed_message_exchange
+Enabling plugins on node rabbit@rabbitmq:
+rabbitmq_delayed_message_exchange
+The following plugins have been configured:
+  rabbitmq_delayed_message_exchange
+  rabbitmq_management
+  rabbitmq_management_agent
+  rabbitmq_prometheus
+  rabbitmq_web_dispatch
+Applying plugin configuration to rabbit@rabbitmq...
+The following plugins have been enabled:
+  rabbitmq_delayed_message_exchange
+
+started 1 plugins.
+```
+
+
+
+### 11.3 插件应用-声明延迟交换机
+
+基于注解方式：
+
+```java
+@RabbitListener(bindings = @QueueBinding(
+        value = @Queue(name = "delay.queue", durable = "true"),
+        exchange = @Exchange(name = "delay.direct", delayed = "true"),
+        key = "delay"
+))
+public void listenDelayMessage(String msg){
+    log.info("接收到delay.queue的延迟消息：{}", msg);
+}
+```
+
+基于`@Bean`的方式：
+
+```java
+package com.itheima.consumer.config;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Slf4j
+@Configuration
+public class DelayExchangeConfig {
+
+    @Bean
+    public DirectExchange delayExchange(){
+        return ExchangeBuilder
+                .directExchange("delay.direct") // 指定交换机类型和名称
+                .delayed() // 设置delay的属性为true
+                .durable(true) // 持久化
+                .build();
+    }
+
+    @Bean
+    public Queue delayedQueue(){
+        return new Queue("delay.queue");
+    }
+    
+    @Bean
+    public Binding delayQueueBinding(){
+        return BindingBuilder.bind(delayedQueue()).to(delayExchange()).with("delay");
+    }
+}
+
+```
+
+
+
+### 11.4. 插件应用-发送延迟消息
+
+发送消息时，必须通过x-delay属性设定延迟时间：
+
+```java
+@Test
+void testPublisherDelayMessage() {
+    // 1.创建消息
+    String message = "hello, delayed message";
+    // 2.发送消息，利用消息后置处理器添加消息头
+    rabbitTemplate.convertAndSend("delay.direct", "delay", message, new MessagePostProcessor() {
+        @Override
+        public Message postProcessMessage(Message message) throws AmqpException {
+            // 添加延迟消息属性
+            message.getMessageProperties().setDelay(5000);
+            return message;
+        }
+    });
+}
+```
+
+>**注意：**
+>延迟消息插件内部会维护一个本地数据库表，同时使用Elang Timers功能实现计时。如果消息的延迟时间设置较长，可能会导致堆积的延迟消息非常多，会带来较大的CPU开销，同时延迟消息的时间会存在误差。
+>因此，**不建议设置延迟时间过长的延迟消息**。
