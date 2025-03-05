@@ -1,3 +1,16 @@
+导入Maven依赖
+
+```xml
+<!--Netty 依赖-->
+<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-all</artifactId>
+    <version>4.1.42.Final</version>
+</dependency>
+```
+
+
+
 实现单对单聊天
 
 ```java
@@ -255,7 +268,7 @@ public class NettyApplication {
 
 
 
-测试：
+前端代码：
 
 ```html
 <!DOCTYPE html>
