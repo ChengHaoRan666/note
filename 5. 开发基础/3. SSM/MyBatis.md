@@ -1140,6 +1140,8 @@ select * from t_dept where did = #{did}
 
 多对一映射用javaType表名属性的类型
 
+
+
 ## 七. 动态 SQL
 
 Mybatis框架的动态SQL技术是一种根据特定条件动态拼装SQL语句的功能，它存在的意义是为了解决拼接SQL语句字符串时的痛点问题。
