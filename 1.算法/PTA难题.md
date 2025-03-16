@@ -34,3 +34,46 @@ public class Main {
 }
 ```
 
+
+
+20
+
+
+
+25
+
+分割时只是按照第一个空格分割，用splie(" ",2)第二个参数表示只分割为两块
+
+```java
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
+public class Main {
+    public static void main(String[] args) throws IOException {
+        BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
+        String[] strings = bf.readLine().split(" ", 2);
+        String a = strings[0];
+        String b = strings[1];
+        try {
+            a = Integer.parseInt(a) + "";
+        } catch (Exception e) {
+            a = "?";
+        }
+        try {
+            b = Integer.parseInt(b) + "";
+        } catch (Exception e) {
+            b = "?";
+        }
+        // 如果a不是?
+        if (!a.equals("?")) if (Integer.parseInt(a) > 1000 || Integer.parseInt(a) < 1) a = "?";
+        // 如果b不是?
+        if (!b.equals("?")) if (Integer.parseInt(b) > 1000 || Integer.parseInt(b) < 1) b = "?";
+        String c = "?";
+        if (!a.equals("?") && !b.equals("?"))
+            c = Integer.parseInt(a) + Integer.parseInt(b) + "";
+        System.out.println(a + " + " + b + " = " + c);
+    }
+}
+```
+
