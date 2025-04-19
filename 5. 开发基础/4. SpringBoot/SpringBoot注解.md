@@ -59,3 +59,10 @@
 > 写在方法上，请求路径会映射到该方法，下面四个是对第一个的一层封装，method进行设置
 
 > @MapperScan("com.atguigu.admin.mapper") 查找对应包下的mapper接口，接口上不用加@Mapper注解
+
+> @Validated注解：搭配
+>
+> @NotBlank(message = "手机号不能为空")
+> @Pattern(regexp = PHONE_REGEXP, message = "手机号格式不正确")
+>
+> 注解用，对于DTO而言，可以在参数列表中，对于@RequestParam接收的参数，需要放在控制器类上面
