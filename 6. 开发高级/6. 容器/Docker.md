@@ -108,7 +108,7 @@ Ubuntu 22.04 64位安装Docker：
 >
 > 卷映射：在外部创建一个文件夹或者文件，内容和容器内对应的内容一致。用外部的代替内部的文件夹或者文件。
 
-> 卷映射docker统一存放在一个位置：/var/lib/docker/volumes/<volume-name\>
+> 卷映射docker统一存放在一个	位置：/var/lib/docker/volumes/<volume-name\>
 
 1. `docker volume ls`可以查看所有卷
 2. `docker volume create 卷名`手动创建卷
@@ -553,14 +553,30 @@ volumes:
 ## 八. 实践
 
 ```shell
-docker run --name mysql -v /home/www/mysql_data:/var/lib/mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=chr@4521 --network blog  -d mysql:8.0.41 
+docker run \
+--name mysql \
+-v /home/www/mysql_data:/var/lib/mysql \
+-p 3306:3306 \
+-e MYSQL_ROOT_PASSWORD=chr@4521 \
+--network blog  \
+-d mysql:8.0.41 
 ```
 
 ```shell
 docker run \
-> -p 80:80 \
-> --name blog_jar \
-> --network blog \
-> -d blog
+-p 80:80 \
+--name blog_jar \
+--network blog \
+-d blog
 ```
 
+```shell
+-- https://hub.docker.com/r/redis/redis-stack-server
+
+docker run \
+-p 6379:6379 \
+--name redis-stack \
+-v /home/www/redis/data:/data \
+-e REDIS_ARGS="--requirepass mypassword" \
+--network blog \
+-d  redis/redis-stack-server
