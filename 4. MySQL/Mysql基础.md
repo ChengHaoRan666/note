@@ -1,4 +1,282 @@
-## **函数**
+## **1. 表和数据库的创建和删除**
+
+### 数据库操作：
+
+```mysql
+# 创建数据库，在不存在
+create database [IF NOT EXISTS] 数据库名称;
+
+# 删除数据库
+drop database 数据库名称;
+
+# 删除数据库，检查是否存在
+drop database if exists 数据库名称;
+
+# 使用数据库
+use mysql_text_one;
+
+# 列出数据库管理系统的数据库列表
+show databases;
+
+# 查询当前数据库
+select database();
+```
+
+### 表操作：
+
+```mysql
+# 显示指定数据库的所有表，使用该命令前需要使用 use 命令来选择要操作的数据库。
+SHOW TABLES;
+
+# 显示数据表的属性，属性类型，主键信息 ，是否为 NULL，默认值等其他信息。
+SHOW COLUMNS FROM 数据表;
+
+# 显示数据表的属性，属性类型，主键信息 ，是否为 NULL，默认值等其他信息。
+desc 数据表名;
+
+# 显示数据表的详细索引信息，包括PRIMARY KEY（主键）。
+SHOW INDEX FROM 数据表;
+
+
+# 创建表
+create table 表名(列名1 数据类型 列级约束类型 [comment '注释'],
+                 列名2 数据类型 列级约束类型  [comment '注释'],
+                 列名3 数据类型 列级约束类型  [comment '注释'],
+                表级约束
+                 )comment ['注释'];
+                 
+                 
+-- 删除表，如果存在的话
+DROP TABLE IF EXISTS 表名;
+
+
+-- 直接删除表，不检查是否存在
+DROP TABLE 表名;
+
+# 查看建表语句
+show create table one_table;
+
+# 为表添加字段
+alter table 表名 add 字段名 char(3) comment '注释';
+
+# 修改字段数据类型
+alter table 表名 modify 字段名 新数据类型;
+
+# 修改字段名和字段数据类型
+alter  table 表名 change 旧字段名 新字段名 新数据类型 comment '注释';
+
+# 删除字段
+alter table 表名 drop 字段名;
+
+# 修改表名
+alter table 旧表名 rename to 新表名;
+```
+
+
+
+### 数据结构：
+
+#### 数值类型数据结构：
+
+![](https://github.com/myself54188/picx-images-hosting/raw/master/数值类型.45lufddy6.webp)
+
+
+
+#### 时间类型数据结构：
+
+![](https://github.com/myself54188/picx-images-hosting/raw/master/时间类型.2veo2hzhzx.webp)
+
+#### 字符串类型数据结构：
+
+![](https://github.com/myself54188/picx-images-hosting/raw/master/字符串类型.2obg72dckl.webp)
+
+
+
+
+
+## **2. 表的增删改查**
+
+### 增：
+
+```mysql
+# 给指定字段添加数据
+insert into 表名(字段名1, 地段名2, 字段名3...) values (值1，值2，值3...);
+
+# 给全部字段添加数据
+insert into one_table values ('张三','0101','18');
+
+# 给全部字段批量添加属性
+insert into 表名 values (值1, 值2, 值3),(值1, 值2, 值3)...;
+
+# 给指定字段批量添加数据
+insert into 表名(字段名1, 地段名2...) values (值1，值2...),(值1，值2...)...;
+```
+
+### 删：
+
+```mysql
+# 删除一行数据
+delete from 表名 where 条件;
+```
+
+### 改：
+
+```mysql
+update 表名 set 字段名1 = 值1,字段名2 = 值2 where 条件;
+```
+
+### 查：
+
+#### **1. 单表查询：**
+
+```mysql
+# 查询语句
+select [distinct] 字段列表
+from 表名列表
+where 条件列表
+group by 分组条件
+having 分组后条件列表
+order by 字段1 asc 或 desc，字段2 asc 或 desc...
+limit 起始索引，每页多少条数据;
+```
+
+| 运算符 |   功能   |      运算符      |                  功能                  |
+| :----: | :------: | :--------------: | :------------------------------------: |
+|   >    |   大于   | between...AND... |  在范围内<br/>（包含最小值，最大值）   |
+|   <    |   小于   |     IN(...)      |             在列表中多选一             |
+|   >=   | 大于等于 |   LIEK  占位符   | 模糊匹配<br/>（%多个字符，_ 单个字符） |
+|   <=   | 小于等于 |     IS NULL      |                  非空                  |
+|   =    |   等于   |     AND 或 &     |                   且                   |
+| <>或!= |  不等于  |    OR 或 \|\|    |                   或                   |
+|        |          |    NOT 或 ！     |                   非                   |
+
+> **聚合函数常和分组一起用**
+
+| 函数  |   功能   |
+| :---: | :------: |
+| count | 统计数量 |
+|  max  | 求最大值 |
+|  min  | 求最小值 |
+|  avg  | 求平均值 |
+|  sum  |   求和   |
+
+> **聚合函数不统计（计算）NULL值**
+
+where和having的条件的区别：
+
+1. where是在分组前对数据进行过滤，过滤的结果参与分组。
+2. having是分组后再对结果进行过滤。
+3. where不能对聚集函数进行判断。
+4. having可以对聚集函数进行判断。
+
+分页处理中limit后接上起始索引和每页多少条数据，起始索引是要查询的页数（从0开始）
+
+<font color="red">**单表查询中语句执行顺序：**</font>
+
+<font color="red">**from -> where -> group by -> having -> select -> order by -> limit**</font>
+
+#### **2.多表查询：**
+
+##### 2.1 表的关系
+
+- 一对一：在任意一方加入外键，关联另一方主键，并且设置外键为唯一。
+- 一对多：在多的一方建立外键，指向一的一方的主键。
+- 多对多：建立第三张中间表，中间表至少包含两个外键，分别关联两房主键。
+
+
+
+##### 2.2 连接查询--内连接
+
+相当于查询A，B交集部分数据
+
+```mysql
+# 隐式内连接
+select 字段列表 from 表1,表2 where 条件...;
+
+# 显式内连接
+select 字段列表 from 表1[inner] join 表2 on 连接条件...;
+```
+
+
+
+##### 2.3 连接查询--外连接
+
+左外连接：查询左表所有数据，以及两张表交集部分数据。
+
+右外连接：查询右表所有数据，以及两张表交集部分数据。
+
+```mysql
+# 左外连接
+select 字段列表 from 表1 left [outer] join 表2 on 条件...;
+
+# 右外连接
+select 字段列表 from 表1 right [outer] join 表2 on 条件...;
+```
+
+
+
+##### 2.4 连接查询--自连接
+
+当前表与自身进行连接查询，自连接必须使用别名。
+
+
+
+##### 2.5 子查询
+
+sql语句中嵌套select语句，称为嵌套查询，又称子查询。
+
+
+
+
+
+
+
+## **3. 用户管理和权限**
+
+```mysql
+# 查询用户
+use mysql;
+select * from user;
+
+# 创建用户
+create user '用户名' @ '主机名' identified by '密码';
+
+# 修改用户密码
+alter user '用户名'@ '主机名' identified with mysql_native_password by '新密码';
+
+# 删除用户
+drop user '用户名'@ '主机名';
+```
+
+```mysql
+# 查询权限
+show grants for '用户名' @ '主机名';
+
+# 授予权限
+grant 权限列表 on 数据库.表名 to '用户名'@'主机名';
+
+# 撤销权限
+revoke 权限列表 on 数据库.表名 from '用户名'@'主机名';
+```
+
+权限列表：
+
+|  权限  |          说明          |
+| :----: | :--------------------: |
+|  all   |        所有权限        |
+| select |      查询数据权限      |
+| insert |      插入数据权限      |
+| update |      修改数据权限      |
+| delete |      删除数据权限      |
+| alter  |       修改表权限       |
+|  drop  | 删除数据库/表/视图权限 |
+| create |   创建数据库/表权限    |
+
+
+
+
+
+## **4. 函数**
 
 ### 字符串函数：
 
@@ -143,3 +421,146 @@
 | CASE WHEN [val1] THEN [res1] ... ELSE [default] END     | 如果val1为true，返回res1...否则返回default默认   |
 | CASE[expr] WHEN [val1] THEN [res1]...ELSE [default] END | 如果expr的值等于val1，返回res1...否则返回default |
 
+## **5. 约束**
+
+![](https://github.com/CHengHaoRan666/picx-images-hosting/raw/master/约束类型.1aox312ajo.webp)
+
+
+
+```mysql
+# 创建表
+create table 表名(列名1 数据类型 列级约束类型 [comment '注释'],
+                 列名2 数据类型 列级约束类型  [comment '注释'],
+                 列名3 数据类型 列级约束类型  [comment '注释'],
+                表级约束
+                 )comment ['注释'];
+```
+
+### 创建表时设置外键：
+
+列级约束：
+
+```mysql
+# 例：
+CREATE TABLE example (
+  id INT PRIMARY KEY,  -- 列级的主键约束
+  name VARCHAR(50) NOT NULL,  -- 列级的非空约束
+  age INT DEFAULT 18,  -- 列级的默认值约束
+  unique_column INT UNIQUE,  -- 列级的唯一约束
+  sex INT,
+  FOREIGN KEY (sex) REFERENCES another_table(another_id)  -- 列级的外键约束
+);
+```
+
+表级约束：
+
+```mysql
+# 例：
+CREATE TABLE example (
+  id INT,
+  name VARCHAR(50),
+  age INT,
+  unique_column1 INT,
+  unique_column2 INT,
+  PRIMARY KEY (id),  -- 表级的主键约束
+  UNIQUE (unique_column1, unique_column2),  -- 表级的复合唯一约束
+  FOREIGN KEY (name) REFERENCES another_table(name)  -- 表级的外键约束
+);
+```
+
+### 创建表后添加删除外键：
+
+```mysql
+# 添加
+alter table one_table add constraint 外键名字 foreign key (外键字段名) references 主表(主表字段名);
+
+# 删除
+alter table 表名 DROP FOREIGN KEY 外键名称;
+```
+
+
+
+## **6. 事务**
+
+`事务`是一组操作的集合，是一个不可分割的工作单位，事务会把所有的操作作为一个整体一起向系统提交或者撤销操作请求，即这些操作要么`同时成功，要么同时失败`。
+
+ 
+
+mysql中的事务是自动提交的。
+
+
+
+### 事务操作：
+
+#### 方式一：
+
+设置手动提交后，操作只是临时修改，数据库中数据并没有改变，需要提交。
+
+```mysql
+select @@autocommit; # 查看事务是否自动提交。1为自动提交，0为手动提交
+set @@autocommit = 0; # 设置事务手动提交
+
+commit; # 提交事务
+
+rollback; # 回滚事务
+```
+
+
+
+#### 方式二：
+
+```mysql
+start transaction; # 开启事务
+# 操作
+commit; # 没有错误，提交
+rollback; # 有错误，回滚
+```
+
+
+
+
+
+### 事务四大特性：
+
+**原子性**：事务是不可分割的最小操作单元，要么全部成功，要么全部失败。
+
+**一致性**：事务完成时，必须使所有的数据都保持一致状态。
+
+**隔离性**：数据库系统提供的隔离机制，保证事务在不受外部并发操作影响的独立环境下运行。
+
+**持久性**：事务一旦提交或回滚，它对数据库中的数据的改变就是永久的。
+
+
+
+### 并发事务问题：
+
+**脏读**：一个事务读到另外一个事务还没有提交的数据。
+
+**不可重复读**：一个事务先后读取同一条记录，但两次读取的数据不同，称之为不可重复读。
+
+**幻读**：一个事务按照条件查询数据时，没有对应的数据行，但是在插入数据时，又发现这行数据已经存在，好像出现了“幻影”。
+
+
+
+### 事务的隔离级别：
+
+==事务的隔离级别就是为了解决事务并发问题的。==
+
+|       隔离级别        | 脏读 | 不可重复读 | 幻读 |
+| :-------------------: | :--: | :--------: | :--: |
+|   Read uncommitted    |  √   |     √      |  √   |
+|    Read committed     |  ×   |     √      |  √   |
+| Repeatable Read(默认) |  ×   |     ×      |  √   |
+|     Serializable      |  ×   |     ×      |  ×   |
+
+> 从上到下隔离级别越来越高，性能越来越低。
+
+```mysql
+# 查看事务隔离级别
+select @@transaction_isolation;
+
+# session：对于当前客户端会话窗口有效
+# global：所有所有客户端会话窗口有效
+# 设置事务隔离级别
+set session[global] transaction isolation level read uncommitted[...];
+```
