@@ -78,17 +78,17 @@ alter table 旧表名 rename to 新表名;
 
 #### 数值类型数据结构：
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/数值类型.45lufddy6.webp)
+![](https://github.com/myself54188/picx-images-hosting/raw/master/MySQL/数值类型.45lufddy6.webp)
 
 
 
 #### 时间类型数据结构：
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/时间类型.2veo2hzhzx.webp)
+![](https://github.com/myself54188/picx-images-hosting/raw/master/MySQL/时间类型.2veo2hzhzx.webp)
 
 #### 字符串类型数据结构：
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/字符串类型.2obg72dckl.webp)
+![](https://github.com/myself54188/picx-images-hosting/raw/master/MySQL/字符串类型.2obg72dckl.webp)
 
 
 
@@ -423,7 +423,7 @@ revoke 权限列表 on 数据库.表名 from '用户名'@'主机名';
 
 ## **5. 约束**
 
-![](https://github.com/CHengHaoRan666/picx-images-hosting/raw/master/约束类型.1aox312ajo.webp)
+![](https://github.com/CHengHaoRan666/picx-images-hosting/raw/master/MySQL/约束类型.1aox312ajo.webp)
 
 
 

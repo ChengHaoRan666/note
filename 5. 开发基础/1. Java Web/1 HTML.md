@@ -115,7 +115,7 @@
 
 特殊字符：
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/特殊字符8.4uausu50bj.webp)
+![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/特殊字符8.4uausu50bj.webp)
 
 
 
@@ -215,7 +215,7 @@ rowspan：设置单元格占几个行
 
 在HTML中，一个完整的表单通常由<font color = "red">表单域</font>，<font color = "red">表单控件（表单元素）</font>和<font color = "red">提示信息</font>三部分组成。
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/表单.5fkif4zgm2.webp)
+![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/表单.5fkif4zgm2.webp)
 
 1. 表单域
 
@@ -274,13 +274,13 @@ rowspan：设置单元格占几个行
 
       type可以取的值：
 
-      ![](https://github.com/myself54188/picx-images-hosting/raw/master/input表单.175b5b97td.webp)
+      ![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/input表单.175b5b97td.webp)
 
       
 
       其他属性：
 
-      ![](https://github.com/myself54188/picx-images-hosting/raw/master/aaaaaa.10239vn2ct.webp)
+      ![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/aaaaaa.10239vn2ct.webp)
 
       
 
@@ -313,7 +313,7 @@ rowspan：设置单元格占几个行
    
       效果：
 
-      ![](https://github.com/myself54188/picx-images-hosting/raw/master/效果.60u61ftwwy.webp)
+      ![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/效果.60u61ftwwy.webp)
 
       
 

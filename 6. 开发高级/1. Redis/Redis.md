@@ -12,7 +12,7 @@
 
 ## 	1. redis十大数据类型
 
-![redis类型](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/redis类型.8adawc2ojw.webp)
+![redis类型](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Redis/redis类型.8adawc2ojw.webp)
 
 
 
@@ -187,7 +187,7 @@ msetnx 要求所以key都不存在
 
 #### 1.2：列表 List
 
-![image](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/image.1hs9bfbas7.webp)
+![image](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Redis/image.1hs9bfbas7.webp)
 
 1. Redis列表是简单的字符串列表，按照插入顺序排序。你可以添加一个元素到列表的头部（左边）或者尾部（右边）
 2. 它的底层实际是个双端链表，最多可以包含 2^32 - 1 个元素 (4294967295, 每个列表超过40亿个元素)
@@ -733,7 +733,7 @@ GEO是Zset的子类
 
 #### 1.8：位图 bitmap
 
-![下载](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/下载.2vesdzla6n.webp)
+![下载](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Redis/下载.2vesdzla6n.webp)
 
 由0和1状态表现的二进制位的bit数组
 
@@ -1112,7 +1112,7 @@ XTRIM key MAXLEN BYTES 1048576
 
 操作系统控制的写回，每个写命令执行完，把日志写入AOF缓冲区中，由操作系统决定何时将缓冲区内容写入磁盘
 
-![AOF写回策略](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/AOF写回策略.esk64ws0w.webp)
+![AOF写回策略](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Redis/AOF写回策略.esk64ws0w.webp)
 
 
 
@@ -1194,7 +1194,7 @@ auto-aof-rewrite-min-size：指定AOF文件的最小大小，只有当AOF文件�
 
 先判断是否存在AOF，如果存在，加载AOF，如果不存在AOF，判断是否存在RDB，存在加载，不存在失败。
 
-![混合模式加载流程](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/下载.syzx4gz5x.webp)
+![混合模式加载流程](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Redis/下载.syzx4gz5x.webp)
 
 <font color="red">推荐使用混合模式</font>
 
@@ -1471,7 +1471,7 @@ master如果配置了requirepass参数，需要密码登录，那么slave就要�
 
 哨兵监控室吹哨人巡查监控后台master主机是否故障，如果故障根据<font color="red">投票数</font>自动将某一个从库转为新主库，继续对外服务。
 
-![redis哨兵](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/redis哨兵.26lkjenc1l.jpg)
+![redis哨兵](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Redis/redis哨兵.26lkjenc1l.jpg)
 
 
 
@@ -1562,7 +1562,7 @@ master如果配置了requirepass参数，需要密码登录，那么slave就要�
 
 ##### leader哨兵进行故障转移：
 
-![slave节点选择](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/slave节点选择.6pnll6l5qc.webp)
+![slave节点选择](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Redis/slave节点选择.6pnll6l5qc.webp)
 
 1. 先比较优先级，谁的优先级高就选谁做master。一样的情况下向下判断。
    优先级由`replica-priority 100`指定，值越小，优先级越高。
@@ -1605,7 +1605,7 @@ leader哨兵会更新所有哨兵的配置文件，广播新master的信息。�
 在主从复制+哨兵的操作方式中，都是一台master进行处理，如果主节点挂了，即使采用哨兵自动升级子节点，也会有一段时间的操作没有处理到。对此集群方式将所有数据不再一台机器上，而是每台机器只存有部分数据。
 
 
-![redis集群](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/redis集群.esloi3z5k.jpg)
+![redis集群](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Redis/redis集群.esloi3z5k.jpg)
 
 集群模式几乎完全替代了哨兵模式，当M1挂了后，可以由M2，M3提供服务，S1还可以顶替M1。
 
@@ -1727,7 +1727,7 @@ Redis主节点的配置信息中它所负责的哈希槽是通过一张bitmap的
 
 #### 集群环境配置：
 
-![redis集群](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/redis集群.esloi3z5k.jpg)
+![redis集群](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Redis/redis集群.esloi3z5k.jpg)
 
 ##### 搭建三主三从架构：
 

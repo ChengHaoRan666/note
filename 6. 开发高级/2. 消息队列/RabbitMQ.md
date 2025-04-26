@@ -65,7 +65,7 @@
 9. Channel（信道，多路复用连接中的一条独立的双向数据流通道。信道是建立在真实的TCP连接内地虚拟连接，AMQP 命令都是通过信道发出去的，不管是发布消息、订阅队列还是接收消息，这些动作都是通过信道完成。因为对于操作系统来说建立和销毁 TCP 都是非常昂贵的开销，所以引入了信道的概念，以复用一条 TCP 连接）
 10. Virtual Host（虚拟主机，表示一批交换器、消息队列和相关对象。虚拟主机是共享相同的身份认证和加密环境的独立服务器域。每个 vhost 本质上就是一个 mini 版的 RabbitMQ 服务器，拥有自己的队列、交换器、绑定和权限机制。vhost 是 AMQP 概念的基础，必须在连接时指定）
 
-![rabbitMQ](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/rabbitMQ.5q7jk4f845.webp)
+![rabbitMQ](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/RabbitMQ/rabbitMQ.5q7jk4f845.webp)
 
 
 
@@ -798,7 +798,7 @@ spring:
 
 > 死信队列和其他队列功能一样的，只是队列设置了`x-dead-letter-exchange`参数，指定死信交换机
 
-![延迟消息](https://raw.githubusercontent.com/ChengHaoRan666/picx-images-hosting/refs/heads/master/%E5%BB%B6%E8%BF%9F%E6%B6%88%E6%81%AF.3d4x5q1q7r.webp)
+![延迟消息](https://raw.githubusercontent.com/ChengHaoRan666/picx-images-hosting/refs/heads/master/RabbitMQ/%E5%BB%B6%E8%BF%9F%E6%B6%88%E6%81%AF.3d4x5q1q7r.webp)
 
 
 

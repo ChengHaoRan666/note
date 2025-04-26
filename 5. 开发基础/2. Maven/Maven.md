@@ -18,7 +18,7 @@
 
 **软件结构：**
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/image-20231021110800113.3uurfo294h.webp)
+![](https://github.com/myself54188/picx-images-hosting/raw/master/Maven/image-20231021110800113.3uurfo294h.webp)
 
 **bin**：含有Maven的运行脚本
 
@@ -86,7 +86,7 @@ LICENSE、NOTICE、README.txt：针对Maven版本，第三方软件等简要介�
 
 > 我们需要将配置好的maven软件，配置到idea开发工具中即可！ 注意：idea工具默认自带maven配置软件，但是因为没有修改配置，建议替换成本地配置好的maven！
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/image-20240811140404949.7zqcrrzf7v.webp)
+![](https://github.com/myself54188/picx-images-hosting/raw/master/Maven/image-20240811140404949.7zqcrrzf7v.webp)
 
 
 
@@ -134,7 +134,7 @@ GAV遵循一下规则：
 
 ### 2. Idea构建Maven Java SE工程
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/image-20240811141435106.3yedddvbv0.webp)
+![](https://github.com/myself54188/picx-images-hosting/raw/master/Maven/image-20240811141435106.3yedddvbv0.webp)
 
 创建成功后生成一个Maven配置文件
 
@@ -165,7 +165,7 @@ GAV遵循一下规则：
 
 创建成功后的文件结构：
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/image-20240811142510710.7sn4wcd9sd.webp)
+![](https://github.com/myself54188/picx-images-hosting/raw/master/Maven/image-20240811142510710.7sn4wcd9sd.webp)
 
 
 
@@ -228,7 +228,7 @@ Maven 是一个强大的构建工具，它提供一种标准化的项目结构�
 
 同时，项目构建还能够将多个开发人员的代码汇合到一起，并能够自动化项目的构建和部署，大大降低了项目的出错风险和提高开发效率。常见的构建工具包括 Maven、Gradle、Ant 等。
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/image_REm5kk7DnX.2domdwy4ds.webp)
+![](https://github.com/myself54188/picx-images-hosting/raw/master/Maven/image_REm5kk7DnX.2domdwy4ds.webp)
 
 
 
@@ -268,7 +268,7 @@ Maven 是一个强大的构建工具，它提供一种标准化的项目结构�
 
 ### 3. 可视化方式项目构建
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/image-20231021153444864.5mnqaklm0i.webp)
+![](https://github.com/myself54188/picx-images-hosting/raw/master/Maven/image-20231021153444864.5mnqaklm0i.webp)
 
 
 
@@ -517,7 +517,7 @@ dependencies标签下引入开发需要的jar包！我们可以在build/plugins/
 
 当直接引用或者间接引用出现了相同的jar包! 这时呢，一个项目就会出现相同的重复jar包，这就算作冲突！依赖冲突避免出现重复依赖，并且终止依赖传递！
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/image_km7_szBRUw.2yya07skof.webp)
+![](https://github.com/myself54188/picx-images-hosting/raw/master/Maven/image_km7_szBRUw.2yya07skof.webp)
 
 maven自动解决依赖冲突问题能力，会按照自己的原则，进行重复依赖选择。同时也提供了手动解决的冲突的方式，不过不推荐！
 
