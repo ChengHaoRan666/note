@@ -131,7 +131,7 @@ import java.nio.channels.FileChannel;
 public class TestByteBuffer {
     public static void main(String[] args) throws IOException {
         // 创建 fileChannel
-        try (FileChannel fileChannel = new FileInputStream("src/main/java/com/chr/netty/NIO/data.txt").getChannel()) {
+    try (FileChannel fileChannel = new FileInputStream("data.txt").getChannel()) {
             // 创建 byte 缓冲区
             ByteBuffer byteBuffer = ByteBuffer.allocateDirect(10);
 
@@ -521,7 +521,106 @@ buf.get(otherBuf);
 
 > **注意**
 >
-> rewind 和 flip 都会清除 mark 位置
+> rewind 、clear 和 flip 都会清除 mark 位置
 
 
+
+#### 3.3.6 String和ByteBuffer互转
+
+可以通过`StandardCharsets`类(标准字符集类)进行转换
+
+>字符串转为ByteBuffer：通过`encode`转换
+>
+>```java
+>ByteBuffer buffer = StandardCharsets.UTF_8.encode("你好");
+>```
+>
+>字符串转为ByteBuffer：通过`wrap`方法转换
+>
+>```java
+>ByteBuffer buffer2 = ByteBuffer.wrap("string".getBytes());
+>```
+>
+>ByteBuffer转为字符串：
+>
+>```java
+>String bufferStr = StandardCharsets.UTF_8.decode(buffer).toString();
+>```
+
+<font color="red">当使用 `decode `方法将 ByteBuffer 转为字符串需要 ByteBuffer 是读模式</font>
+
+<font color="red">通过`wrap`方法和`encode`方法转换得到的是读模式，通过`put`方法得到的ByteBuffer是写模式</font>
+
+
+
+### 3.4 Scattering Reads
+
+分散读取，读取一个内容，分割为多个ByteBuffer
+
+```java
+public static void main(String[] args) {
+        try (FileChannel fileChannel = FileChannel.open(Path.of("words.txt"))) {
+            ByteBuffer buffer1 = ByteBuffer.allocate(3);
+            ByteBuffer buffer2 = ByteBuffer.allocate(3);
+            ByteBuffer buffer3 = ByteBuffer.allocate(5);
+            fileChannel.read(new ByteBuffer[]{buffer1, buffer2, buffer3});
+            System.out.println("buffer1:");
+            debugAll(buffer1);
+            System.out.println("buffer2:");
+            debugAll(buffer2);
+            System.out.println("buffer3:");
+            debugAll(buffer3);
+        } catch (IOException e) {
+        }
+    }
+```
+
+```
+buffer1:
++--------+-------------------- all ------------------------+----------------+
+position: [3], limit: [3]
+         +-------------------------------------------------+
+         |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
++--------+-------------------------------------------------+----------------+
+|00000000| 6f 6e 65                                        |one             |
++--------+-------------------------------------------------+----------------+
+buffer2:
++--------+-------------------- all ------------------------+----------------+
+position: [3], limit: [3]
+         +-------------------------------------------------+
+         |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
++--------+-------------------------------------------------+----------------+
+|00000000| 74 77 6f                                        |two             |
++--------+-------------------------------------------------+----------------+
+buffer3:
++--------+-------------------- all ------------------------+----------------+
+position: [5], limit: [5]
+         +-------------------------------------------------+
+         |  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f |
++--------+-------------------------------------------------+----------------+
+|00000000| 74 68 72 65 65                                  |three           |
++--------+-------------------------------------------------+----------------+
+```
+
+
+
+
+
+### 3.5 Gathering Writes 
+
+集中写入：将多个内容写入一个文件中
+
+```java
+public static void main(String[] args) {
+        try (FileChannel fileChannel = FileChannel.open(Path.of("src/main/java/com/chr/netty/ByteBuffer/words2.txt"),
+                StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
+            ByteBuffer b1 = StandardCharsets.UTF_8.encode("hello");
+            ByteBuffer b2 = StandardCharsets.UTF_8.encode("world");
+            ByteBuffer b3 = StandardCharsets.UTF_8.encode("你好");
+            fileChannel.write(new ByteBuffer[]{b1, b2, b3});
+        } catch (IOException e) {
+            System.out.println(e);
+        }
+    }
+```
 
