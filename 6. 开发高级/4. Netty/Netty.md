@@ -51,6 +51,8 @@
 3. ==SocketChannel==：用于 TCP 客户端连接的通道
 4. ==ServrSocketChannel==：用于 TCP 服务器端监听连接请求的通道
 
+<font color="red">`FileChannel`是阻塞的,`DatagramChannel`,`SocketChannel`,`ServrSocketChannel`可以设置是非阻塞的</font>
+
 
 
 ### 2.2 NIO组件 - Buffer
@@ -492,9 +494,6 @@ buffer.get(bytes);
 
 // 读取指定位置的值，不会让position的值改变
 byte b = buf.get(3);
-
-// 读取数据到另一个ByteBuffer中
-buf.get(otherBuf);
 ```
 
 `get `方法会让 `position `读指针向后走，如果想重复读取数据
@@ -623,4 +622,574 @@ public static void main(String[] args) {
         }
     }
 ```
+
+
+
+### 3.6 实践
+
+网络上有多条数据发送给服务端，数据之间使用 \n 进行分隔 但由于某种原因这些数据在接收时，被进行了重新组合，例如原始数据有3条为
+
+- Hello,world\n
+- I'm zhangsan\n
+- How are you?\n
+
+变成了下面的两个 byteBuffer (黏包，半包)
+
+- Hello,world\nI'm zhangsan\nHo
+- w are you?\n
+
+现在要求你编写程序，将错乱的数据恢复成原始的按 \n 分隔的数据
+
+| 现象 | 原因                                               | 示例                 |
+| ---- | -------------------------------------------------- | -------------------- |
+| 粘包 | 多条消息在 TCP 流中连续发出，接收端一次读到多条    | `Hello\nWorld\n`     |
+| 半包 | 一条消息太大或网络分片导致，接收端一次只读到一部分 | `Hello,Wo` + `rld\n` |
+
+```java
+public class TestByteBufferPractice {
+    public static void main(String[] args) {
+        ByteBuffer buffer = ByteBuffer.allocate(60);
+        buffer.put("Hello,world\nI'm zhangsan\nHo".getBytes());
+        split(buffer);
+
+        buffer.put("w are you?\n".getBytes());
+        split(buffer);
+    }
+
+    private static void split(ByteBuffer buffer) {
+        // 切换到读模式，limit为字符串长度
+        buffer.flip();
+        int limit = buffer.limit();
+        for (int i = 0; i < limit; i++) {
+            if (buffer.get(i) == '\n') {
+                // 打印一句话结尾位置
+                System.out.println("位置：" + i);
+                // 创建一个ByteBuffer存储每一条消息，消息大小：\n的位置+1减去起始位置
+                ByteBuffer buffer2 = ByteBuffer.allocate(i + 1 - buffer.position());
+                // 设置limit为i + 1，用于将值复制给buffer2
+                buffer.limit(i + 1);
+                // 把Buffer复制到buffer2里，这个地方会把buffer的position的值更改
+                buffer2.put(buffer);
+                // 打印出来
+                debugAll(buffer2);
+                // 把limit设置回去，用于之后继续加数据
+                buffer.limit(limit);
+            }
+        }
+        buffer.compact();
+    }
+}
+```
+
+
+
+> TCP是面向字节流的协议，不会对消息的边界进行处理，会出现黏包半包问题，但是可靠的
+>
+> UDP是面向消息的协议，一次发送就是一条消息。但不是可靠的
+
+
+
+## 4. 文件编程 - Filechannel
+
+### 4.1 FileChannel 工作模式
+
+<font color="red">FileChannel 只能工作在阻塞模式下</font>
+
+
+
+### 4.2 使用
+
+```java
+ByteBuffer buffer = ByteBuffer.allocate(20);
+
+// 1. 通过 FileInputStream 的getChannel方法获取，只能读
+FileChannel fileChannel1 = new FileInputStream("word1.txt").getChannel();
+// 报错
+// fileChannel1.write(ByteBuffer.wrap("a".getBytes()));
+fileChannel1.read(buffer);
+// 切换到读模式
+buffer.flip();
+// 输出
+debugAll(buffer);
+// 切换到写模式
+buffer.clear();
+
+// 2. 通过 FileOutputStream 的getChannel方法获取，只能写
+FileChannel fileChannel2 = new FileOutputStream("word1.txt").getChannel();
+fileChannel2.write(ByteBuffer.wrap("ab".getBytes()));
+// 报错
+// fileChannel2.read(buffer);
+// 切换到读模式
+buffer.flip();
+// 输出
+debugAll(buffer);
+// 切换到写模式
+buffer.clear();
+
+// 3. 通过 RandomAccessFile 是否能读写根据构造 RandomAccessFile 时的读写模式决定
+FileChannel fileChannel3 = new RandomAccessFile("word1.txt", "rw").getChannel();
+fileChannel3.write(ByteBuffer.wrap("abc".getBytes()));
+// 将Filechannel的position指针切换到0
+fileChannel3.position(0);
+
+fileChannel3.read(buffer);
+// 切换到读模式
+buffer.flip();
+// 输出
+debugAll(buffer);
+buffer.clear();
+
+// 4. 用 FileChannel.open 创建
+Path path = Paths.get("word1.txt");
+// 创建FileChannel，有读写权限
+FileChannel fileChannel4 = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE);
+// 写入内容
+fileChannel4.write(ByteBuffer.wrap("abcd".getBytes()));
+// 重置position为0
+fileChannel4.position(0);
+// 读文件内容到buffer
+fileChannel4.read(buffer);
+// 切换到读模式
+buffer.flip();
+// 读出
+debugAll(buffer);
+
+
+fileChannel1.close();
+fileChannel2.close();
+fileChannel3.close();
+fileChannel4.close();
+```
+
+使用`RandomAccessFile`和`FileChannel.open` 创建的`FileChannel`在读取的时候要注意将`position`重新置为0
+
+
+
+#### 4.2.1 获取
+
+1. 通过 `FileInputStream `获取的 channel ==只能读==
+2. 通过 `FileOutputStream `获取的 channel ==只能写==
+3. 通过 `RandomAccessFile `是否能读写根据构造 RandomAccessFile 时的读写模式决定
+4. 通过 `FileChannel.open` 创建
+
+
+
+#### 4.2.2 读取
+
+会从 channel 读取数据填充 ByteBuffer，返回值表示读到了多少字节，-1 表示到达了文件的末尾
+
+```java
+int readBytes = channel.read(buffer);
+```
+
+
+
+#### 4.2.3 写入
+
+写入的正确姿势如下
+
+```java
+ByteBuffer buffer = ...;
+buffer.put(...); // 存入数据
+buffer.flip();   // 切换读模式
+
+while(buffer.hasRemaining()) {
+    channel.write(buffer);
+}
+```
+
+在 while 中调用 channel.write 是因为 write 方法并不能保证一次将 buffer 中的内容全部写入 channel
+
+
+
+#### 4.2.4 关闭
+
+channel 必须关闭，不过调用了 FileInputStream、FileOutputStream 或者 RandomAccessFile 的 close 方法会间接地调用 channel 的 close 方法
+
+
+
+#### 4.2.5 位置
+
+获取当前位置
+
+```java
+long pos = channel.position();
+```
+
+
+
+设置当前位置
+
+```java
+long newPos = ...;
+channel.position(newPos);
+```
+
+
+
+设置当前位置时，如果设置为文件的末尾
+
+- 这时读取会返回 -1
+- 这时写入，会追加内容，但要注意如果 position 超过了文件末尾，再写入时在新内容和原末尾之间会有空洞（00）
+
+
+
+#### 4.2.6 大小
+
+使用 size 方法获取文件的大小
+
+
+
+#### 4.2.7 强制写入
+
+操作系统出于性能的考虑，会将数据缓存，不是立刻写入磁盘。可以调用 force(true) 方法将文件内容和元数据（文件的权限等信息）立刻写入磁盘
+
+
+
+### 4.3 传输数据
+
+使用`transferTo`方法进行传输数据（只能传输2G）
+
+- 第一个参数是起始位置
+- 第二个参数是传输数据大小
+- 第三个参数是传输目的
+
+```java
+static String path1 = "src/main/java/com/chr/netty/FileChannel/word3.txt";
+static String path2 = "src/main/java/com/chr/netty/FileChannel/word4.txt";
+
+public static void main(String[] args) throws IOException {
+    // 传输小文件（2G以下）
+    TestTransferTo1();
+    // 传输大文件（2G以上）
+    TestTransferTo2();
+}
+
+private static void TestTransferTo1() {
+        try (
+                FileChannel inputChannel = new FileInputStream(path1).getChannel();
+                FileChannel outputChannel = new FileOutputStream(path2).getChannel()
+        ) {
+            inputChannel.transferTo(0, inputChannel.size(), outputChannel);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+```
+
+如果文件超过2G，要分开传输
+
+```java
+static String path1 = "src/main/java/com/chr/netty/FileChannel/word3.txt";
+static String path2 = "src/main/java/com/chr/netty/FileChannel/word4.txt";
+
+public static void main(String[] args) throws IOException {
+    // 传输小文件（2G以下）
+    TestTransferTo1();
+    // 传输大文件（2G以上）
+    TestTransferTo2();
+}
+
+private static void TestTransferTo2() {
+    try (FileChannel inputChannel = new FileInputStream(path1).getChannel();
+         FileChannel outputChannel = new FileOutputStream(path2).getChannel()) {
+        long size = inputChannel.size();
+        for (Long left = size; left > 0; ) {
+            // transferTo 返回的是实际传输的数量
+            left -= inputChannel.transferTo(size - left, left, outputChannel);
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
+```
+
+
+
+### 4.4 Path
+
+jdk7 引入了 Path 和 Paths 类
+
+- Path 用来表示文件路径
+- Paths 是工具类，用来获取 Path 实例
+
+```java
+Path source = Paths.get("1.txt"); // 相对路径 使用 user.dir 环境变量来定位 1.txt
+
+Path source = Paths.get("d:\\1.txt"); // 绝对路径 代表了  d:\1.txt
+
+Path source = Paths.get("d:/1.txt"); // 绝对路径 同样代表了  d:\1.txt
+
+Path projects = Paths.get("d:\\data", "projects"); // 代表了  d:\data\projects
+```
+
+
+
+- `.` 代表了当前路径
+- `..` 代表了上一级路径
+
+例如目录结构如下
+
+```java
+d:
+	|- data
+		|- projects
+			|- a
+			|- b
+```
+
+
+
+代码
+
+```java
+Path path = Paths.get("d:\\data\\projects\\a\\..\\b");
+System.out.println(path);
+System.out.println(path.normalize()); // 正常化路径
+```
+
+
+
+会输出
+
+```
+d:\data\projects\a\..\b
+d:\data\projects\b
+```
+
+
+
+### 4.5 Files
+
+#### 4.5.1 检查文件是否存在
+
+```java
+Path path = Paths.get("helloword/data.txt");
+System.out.println(Files.exists(path));
+```
+
+
+
+#### 4.5.2 创建一级目录
+
+```java
+Path path = Paths.get("helloword/d1");
+Files.createDirectory(path);
+```
+
+
+
+- 如果目录已存在，会抛异常 FileAlreadyExistsException
+- 不能一次创建多级目录，否则会抛异常 NoSuchFileException
+
+
+
+#### 4.5.3 创建多级目录
+
+```java
+Path path = Paths.get("helloword/d1/d2");
+Files.createDirectories(path);
+```
+
+
+
+#### 4.5.4 拷贝文件
+
+```java
+Path source = Paths.get("helloword/data.txt");
+Path target = Paths.get("helloword/target.txt");
+
+Files.copy(source, target);
+```
+
+
+
+- 如果文件已存在，会抛异常 FileAlreadyExistsException
+
+如果希望用 source 覆盖掉 target，需要用 StandardCopyOption 来控制
+
+```java
+Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+```
+
+
+
+#### 4.5.5 移动文件
+
+```java
+Path source = Paths.get("helloword/data.txt");
+Path target = Paths.get("helloword/data.txt");
+
+Files.move(source, target, StandardCopyOption.ATOMIC_MOVE);
+```
+
+
+
+- StandardCopyOption.ATOMIC_MOVE 保证文件移动的原子性
+
+#### 4.5.6 删除文件
+
+```java
+Path target = Paths.get("helloword/target.txt");
+
+Files.delete(target);
+```
+
+
+
+- 如果文件不存在，会抛异常 NoSuchFileException
+
+
+
+#### 4.5.7 删除目录
+
+```java
+Path target = Paths.get("helloword/d1");
+
+Files.delete(target);
+```
+
+
+
+- 如果目录还有内容，会抛异常 DirectoryNotEmptyException
+
+
+
+#### 4.5.8 遍历目录文件
+
+```java
+static void directoryCount() throws IOException {
+        Path path = Paths.get("D:\\app\\jdk\\jdk-18.0.1.1");
+        // 线程安全版的 int -> AtomicInteger
+        AtomicInteger dirCount = new AtomicInteger();
+        AtomicInteger fileCount = new AtomicInteger();
+
+        // walkFileTree 两个参数，第一个path地址，第二个不同事件发生时干的事情
+        Files.walkFileTree(path, new SimpleFileVisitor<>() {
+            @Override
+            // 当进入文件夹之前执行
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                    throws IOException {
+                // 输出访问的目录
+                System.out.println(dir);
+                // 计数器+1
+                dirCount.incrementAndGet();
+                return super.preVisitDirectory(dir, attrs);
+            }
+
+            @Override
+            // 访问到文件时执行
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                    throws IOException {
+                // 输出访问的目录
+                System.out.println(file);
+                // 计数器+1
+                fileCount.incrementAndGet();
+                return super.visitFile(file, attrs);
+            }
+        });
+        System.out.println(dirCount); // 88
+        System.out.println(fileCount); // 417
+    }
+```
+
+
+
+`SimpleFileVisitor` 是 Java NIO 提供的一个**方便的工具类**，专门用来**遍历文件夹和文件**。
+ **它本身是个适配器模式** —— 帮你把 `FileVisitor` 接口的四个方法**都默认实现**了（默认啥都不干，只是继续遍历）
+
+| 方法名               | 什么时候触发        | 主要作用                               |
+| -------------------- | ------------------- | -------------------------------------- |
+| `preVisitDirectory`  | 访问一个目录之前    | 比如，想在进入目录前打印目录名         |
+| `visitFile`          | 访问到一个文件时    | 比如，想在访问到文件时记录、统计、处理 |
+| `visitFileFailed`    | 访问文件/目录失败时 | 比如，权限不足、文件不存在，处理异常   |
+| `postVisitDirectory` | 访问完一个目录后    | 比如，目录扫描完成后做收尾工作         |
+
+
+
+#### 4.5.9 统计 jar 的数目
+
+```java
+private static void statisticsJarCount() throws IOException {
+        Path path = Paths.get("D:\\app\\jdk\\jdk-18.0.1.1");
+        // 线程安全版的 int -> AtomicInteger
+        AtomicInteger num = new AtomicInteger();
+        Files.walkFileTree(path, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                String pathName = file.getFileName().toString();
+                int i = pathName.lastIndexOf('.');
+                if (i != -1 && pathName.substring(i + 1).equals("jar")) {
+                    num.incrementAndGet();
+                    System.out.println(pathName);
+                }
+                return super.visitFile(file, attrs);
+            }
+        });
+        System.out.println(num); // 1
+    }
+```
+
+
+
+#### 4.5.10 删除多级目录
+
+```java
+Path path = Paths.get("d:\\a");
+Files.walkFileTree(path, new SimpleFileVisitor<Path>(){
+    @Override
+    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) 
+        throws IOException {
+        Files.delete(file);
+        return super.visitFile(file, attrs);
+    }
+
+    @Override
+    public FileVisitResult postVisitDirectory(Path dir, IOException exc) 
+        throws IOException {
+        Files.delete(dir);
+        return super.postVisitDirectory(dir, exc);
+    }
+});
+```
+
+
+
+**⚠️ 删除很危险**
+
+
+
+> 删除是危险操作，确保要递归删除的文件夹没有重要内容
+
+#### 4.5.11 拷贝多级目录
+
+```java
+long start = System.currentTimeMillis();
+String source = "D:\\Snipaste-1.16.2-x64";
+String target = "D:\\Snipaste-1.16.2-x64aaa";
+
+Files.walk(Paths.get(source)).forEach(path -> {
+    try {
+        String targetName = path.toString().replace(source, target);
+        // 是目录
+        if (Files.isDirectory(path)) {
+            Files.createDirectory(Paths.get(targetName));
+        }
+        // 是普通文件
+        else if (Files.isRegularFile(path)) {
+            Files.copy(path, Paths.get(targetName));
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+});
+long end = System.currentTimeMillis();
+System.out.println(end - start);
+```
+
+
+
+
+
+## 5. 网络编程
 
