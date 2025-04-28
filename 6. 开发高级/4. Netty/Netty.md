@@ -1193,3 +1193,128 @@ System.out.println(end - start);
 
 ## 5. 网络编程
 
+### 5.1 阻塞和非阻塞
+
+#### 5.1.1 阻塞
+
+- 阻塞模式下，相关方法都会导致线程暂停
+  - `ServerSocketChannel.accept` 会在没有连接建立时让线程暂停
+  - `SocketChannel.read` 会在没有数据可读时让线程暂停
+  - 阻塞的表现其实就是线程暂停了，暂停期间不会占用 cpu，但线程相当于闲置
+- 单线程下，阻塞方法之间相互影响，几乎不能正常工作，需要多线程支持
+- 但多线程下，有新的问题，体现在以下方面
+  - 32 位 jvm 一个线程 320k，64 位 jvm 一个线程 1024k，如果连接数过多，必然导致 OOM，并且线程太多，反而会因为频繁上下文切换导致性能降低
+  - 可以采用线程池技术来减少线程数和线程上下文切换，但治标不治本，如果有很多连接建立，但长时间 inactive，会阻塞线程池中所有线程，因此不适合长连接，只适合短连接
+
+
+
+服务器端：
+
+1. 创建`ServerSocketChannel`，服务端通道，用于监听客户端连接
+2. 绑定监听端口
+3. `ssc.accept()`获取与客户端与服务器的连接`SocketChannel`
+4. 可以通过连接`SocketChannel`获取或发送数据
+
+```java
+public static void main(String[] args) throws IOException {
+        // 使用 nio 来理解阻塞模式, 单线程
+        // 0. ByteBuffer
+        ByteBuffer buffer = ByteBuffer.allocate(16);
+        // 1. 创建了服务器
+        ServerSocketChannel ssc = ServerSocketChannel.open();
+
+        // 2. 绑定监听端口
+        ssc.bind(new InetSocketAddress(8080));
+
+        // 3. 连接集合
+        List<SocketChannel> channels = new ArrayList<>();
+        while (true) {
+            // 4. accept 建立与客户端连接， SocketChannel 用来与客户端之间通信
+            log.debug("已准备建立连接...");
+            SocketChannel sc = ssc.accept(); // 阻塞方法，线程停止运行
+            log.debug("{} 连接", sc);
+            channels.add(sc);
+
+            for (SocketChannel channel : channels) {
+                // 5. 接收客户端发送的数据
+                log.debug("接收 {} 消息之前", channel);
+                channel.read(buffer); // 阻塞方法，线程停止运行
+                buffer.flip();
+                debugRead(buffer);
+                buffer.clear();
+                log.debug("接收 {} 消息之后", channel);
+            }
+        }
+    }
+```
+
+客户端：
+
+1. 创建`SocketChannel`
+2. 设置连接服务器地址
+3. 手动发送数据
+
+```java
+public static void main(String[] args) throws IOException {
+    SocketChannel socketChannel = SocketChannel.open();
+    socketChannel.connect(new InetSocketAddress("localhost", 8080));
+    System.out.println("消息发送之前发送...");
+}
+```
+
+<font color="red">阻塞模式下，会让多线程连接发送消息无法实时达到</font>
+
+
+
+#### 5.1.2 非阻塞
+
+- 非阻塞模式下，相关方法都会不会让线程暂停
+  - 在 `ServerSocketChannel.accept` 在没有连接建立时，会返回 null，继续运行
+  - `SocketChannel.read` 在没有数据可读时，会返回 0，让线程不必阻塞，可以去执行其它 `SocketChannel` 的 `read`或是去执行 `ServerSocketChannel.accept`
+  - 写数据时，线程只是等待数据写入 `Channel `即可，无需等 `Channel `通过网络把数据发送出去
+- 但非阻塞模式下，即使没有连接建立和可读数据，线程仍然在不断运行，白白浪费了 cpu
+- 数据复制过程中，线程实际还是阻塞的（AIO 改进的地方）
+
+
+
+非阻塞服务器端代码增加两行：让`SocketChannel`和`ServerSocketChannel`设置为非阻塞
+
+```java
+public static void main(String[] args) throws IOException {
+        // 使用 nio 来理解非阻塞模式, 单线程
+        // 0. ByteBuffer
+        ByteBuffer buffer = ByteBuffer.allocate(16);
+        // 1. 创建了服务器
+        ServerSocketChannel ssc = ServerSocketChannel.open();
+        // 设置为非阻塞模式
+        ssc.configureBlocking(false);
+        // 2. 绑定监听端口
+        ssc.bind(new InetSocketAddress(8080));
+        // 3. 连接集合
+        List<SocketChannel> channels = new ArrayList<>();
+        while (true) {
+            // 4. accept 建立与客户端连接， SocketChannel 用来与客户端之间通信
+            // 非阻塞，线程还会继续运行，如果没有连接建立，但sc是null
+            SocketChannel sc = ssc.accept(); 
+            if (sc != null) {
+                log.debug("{} 连接", sc);
+                // 设置为非阻塞模式
+                sc.configureBlocking(false); 
+                channels.add(sc);
+            }
+            for (SocketChannel channel : channels) {
+                // 5. 接收客户端发送的数据
+                // 非阻塞，线程仍然会继续运行，如果没有读到数据，read 返回 0
+                int read = channel.read(buffer);
+                if (read > 0) {
+                    buffer.flip();
+                    debugRead(buffer);
+                    buffer.clear();
+                    log.debug("接收 {} 消息之后", channel);
+                }
+            }
+        }
+    }
+```
+
+<font color="red">非阻塞模式下，可以及时处理连接和发送的消息，但是如果没有连接和消息，线程会不停空转，CPU负载大</font>
