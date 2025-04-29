@@ -9,7 +9,7 @@
 
 > 用户登录之后都会把用户登录的信息保存到 Session 域中。所以要检查用户是否登录，可以判断 Session 中否包含有用户登录的信息即可
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/image-20240726195952452.8dwsin7q2w.webp)
+![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/image-20240726195952452.8dwsin7q2w.webp)
 
 ### 实现filter过滤：
 

@@ -493,7 +493,7 @@ person:
 
 将静态文件（图片，html文件，css文件，js文件等）放在resources下的/`static` (或 `/public` 或 `/resources` 或 `/META-INF/resources`)目录下可以直接访问
 
-![image](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/SpringBoot/image.7pae6fho2.webp)
+![image](https://ChengHaoRan666.github.io/picx-images-hosting/SpringBoot/image.7pae6fho2.webp)
 
 访问方式：当前项目根路径/ + 静态资源名 
 
@@ -1021,7 +1021,7 @@ public class webConfig implements WebMvcConfigurer {
 
 #### 原理：
 
-![image](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/SpringBoot/image.5c0z6adria.png)
+![image](https://ChengHaoRan666.github.io/picx-images-hosting/SpringBoot/image.5c0z6adria.png)
 
 挨个执行每个拦截器的`preHandle`方法，没有错误再执行目标方法，执行完目标方法后<font color="red">倒序</font>执行`postHandle`方法。进行页面渲染，渲染成功后再<font color="red">倒序</font>执行`afterCompletion`方法。期间一旦有某个方法出错就会立即调用该拦截器的`afterCompletion`方法，没有执行过`preHandle`方法的拦截器不必执行`afterCompletion`方法。
 
@@ -1114,7 +1114,7 @@ spring:
 
 在静态页面下创建`error`文件夹，会自动识别对应的错误页面，有精确的错误状态码页面就匹配精确，没有就找 4xx.html，5xx.html；如果都没有就触发白页
 
-![image](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/SpringBoot/image.8ad99w9pl3.webp)
+![image](https://ChengHaoRan666.github.io/picx-images-hosting/SpringBoot/image.8ad99w9pl3.webp)
 
 
 

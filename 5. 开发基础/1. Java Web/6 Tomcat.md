@@ -80,26 +80,26 @@ docBase 表示你的工程目录在哪里
 
 ### IDEA 整合tomcat服务器：
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/image-20240713161246300.3nrjk8g3oz.webp)
+![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/image-20240713161246300.3nrjk8g3oz.webp)
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/image-20240713162825131.8z6g4y26d3.webp)
+![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/image-20240713162825131.8z6g4y26d3.webp)
 
 
 
 ### IDEA创建web项目：
 
-​	![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/image-20240713162210713.9gwhtj3jxw.webp)
+​	![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/image-20240713162210713.9gwhtj3jxw.webp)
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/image-20240713182538769.7p3iymk722.webp)
+![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/image-20240713182538769.7p3iymk722.webp)
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/image-20240713162312978.3uurfo294l.webp)
+![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/image-20240713162312978.3uurfo294l.webp)
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/image-20240713162421903.6m3tnqod6e.webp)
+![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/image-20240713162421903.6m3tnqod6e.webp)
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/image-20240713162535101.2yya07skon.webp)
+![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/image-20240713162535101.2yya07skon.webp)
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/image-20240713175903489.41xzb3oek8.webp)
+![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/image-20240713175903489.41xzb3oek8.webp)
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/image-20240713180507175.86tkn7lkmx.webp)
+![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/image-20240713180507175.86tkn7lkmx.webp)
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/image-20240713181908000.51e2o9r5q2.webp) 
+![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/image-20240713181908000.51e2o9r5q2.webp) 

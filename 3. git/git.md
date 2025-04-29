@@ -2,9 +2,7 @@
 
 ### 1. 原理
 
-![image](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Git/image.m0nuhrqi.webp)
-
-
+![image](https://ChengHaoRan666.github.io/picx-images-hosting/Git/image.m0nuhrqi.webp)
 
 ### 2. git 常用命令
 
@@ -82,10 +80,10 @@ origin 是库的别名，可以通过`git remote -v`查看，`ChengHaoRan666`是
 
 1. 在项目的设置中找到 collaborators 添加伙伴
 
-![image](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Git/image.5j454pkztw.webp)
+![image](https://ChengHaoRan666.github.io/picx-images-hosting/Git/image.5j454pkztw.webp)
 
 2. 点击邀请邀请伙伴
- ![image](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Git/image.7zqdjmt99s.webp)
+ ![image](https://ChengHaoRan666.github.io/picx-images-hosting/Git/image.7zqdjmt99s.webp)
 
 > <font color="red">添加伙伴后伙伴可以将代码提交到远程库中</font>
 
@@ -98,6 +96,5 @@ origin 是库的别名，可以通过`git remote -v`查看，`ChengHaoRan666`是
 2. 在自己项目中修改
 
 3. 在原项目中点击pull Request 
-
-    ![image](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Git/image.58hbbkmgti.webp)
+    ![image](https://ChengHaoRan666.github.io/picx-images-hosting/Git/image.58hbbkmgti.webp)
 

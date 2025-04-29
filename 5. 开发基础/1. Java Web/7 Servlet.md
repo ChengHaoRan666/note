@@ -96,7 +96,7 @@ public class HelloServlet implements Servlet {
 
 ### servlet实现过程：
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/image-20240714001618244.6f0lsb27r1.webp)
+![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/image-20240714001618244.6f0lsb27r1.webp)
 
 1. 通过localhoot，8080，/servlet 找到对应服务器对应端口对应工程
 2. 已知资源路径，优先在web.xml配置文件中找对应的`<servlet-mapping>`标签的资源路径名即对应的servlet类名，通过servlet类名，在`<servlet>`标签中找到`<servlet-class>`，即为这个资源路径对应的包名加类名。
@@ -200,7 +200,7 @@ public class HelloServlet2 extends HttpServlet {
 
 ### Servlet 类的继承关系：
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/image-20240714104952188.8z6g4y26db.webp)
+![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/image-20240714104952188.8z6g4y26db.webp)
 
 ### ServletConfig 类：
 
@@ -403,7 +403,7 @@ System.out.println("Context1 中获取域数据 key1 的值是:"+ context.getAtt
 
 ##### 4.请求转发：
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/image-20240716130803705.7sn4wcd9s1.webp)
+![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/image-20240716130803705.7sn4wcd9s1.webp)
 
 
 

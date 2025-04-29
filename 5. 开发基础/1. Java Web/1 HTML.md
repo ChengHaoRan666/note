@@ -115,7 +115,7 @@
 
 特殊字符：
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/特殊字符8.4uausu50bj.webp)
+![特殊字符8](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/特殊字符8.4uausu50bj.webp)
 
 
 
@@ -215,7 +215,7 @@ rowspan：设置单元格占几个行
 
 在HTML中，一个完整的表单通常由<font color = "red">表单域</font>，<font color = "red">表单控件（表单元素）</font>和<font color = "red">提示信息</font>三部分组成。
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/表单.5fkif4zgm2.webp)
+![表单](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/表单.5fkif4zgm2.webp)
 
 1. 表单域
 
@@ -274,18 +274,16 @@ rowspan：设置单元格占几个行
 
       type可以取的值：
 
-      ![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/input表单.175b5b97td.webp)
-
-      
+      ![input表单](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/input表单.175b5b97td.webp)
 
       其他属性：
 
-      ![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/aaaaaa.10239vn2ct.webp)
+      ![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/aaaaaa.10239vn2ct.webp)
 
       
 
       ```html
-      <label></label>标签
+   <label></label>标签
       <label></label>标签为input元素定义标注(标签)。
       <label></label>用于绑定一个表单元素，当点击<label>标签内的文本是，浏览器就会自动将焦点（光标）转到或者选择对应的表单元素上，用于增强用户体验。
           
@@ -293,9 +291,9 @@ rowspan：设置单元格占几个行
           <label for = "sex">男</label>
           <input id = "sex" type = "radio" name = "sex">
       ```
-   
       
-
+      
+   
    2. select下拉表达元素
 
       ```html
@@ -312,8 +310,8 @@ rowspan：设置单元格占几个行
       ```
    
       效果：
-
-      ![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/效果.60u61ftwwy.webp)
+   
+      ![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/效果.60u61ftwwy.webp)
 
       
 

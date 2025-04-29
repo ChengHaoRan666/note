@@ -114,7 +114,7 @@ public class SessionServlet extends BaseServlet {
 
 ### 浏览器和Session之间关联的技术内幕：
 
-![](https://github.com/myself54188/picx-images-hosting/raw/master/JavaWeb/image-20240725201909652.1aox312aiv.webp)
+![](https://ChengHaoRan666.github.io/picx-images-hosting/JavaWeb/image-20240725201909652.1aox312aiv.webp)
 
 Session 技术，底层其实是基于 Cookie 技术来实现的。
 

@@ -6,13 +6,13 @@
 
    > 服务器实现模式为一个连接一个线程，即客户端有连接请求时服务器端就需要启动一个线程进行处理，如果这个连接不做任何事情会造成不必要的线程开销
 
-   ![image](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Netty/image.7lk71tk4p3.webp)
+   ![image](https://ChengHaoRan666.github.io/picx-images-hosting/Netty/image.7lk71tk4p3.webp)
 
 2. NIO：java 1.4 之后添加的网络编程模型。`同步非阻塞`
 
    > 服务器实现模式为一个线程处理多个请求（连接），即客户端发送的连接请求都会注册到多路复用器上，多路复用器轮询到连接有 `I/O` 请求就进行处理
 
-   ![NiO模式图](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Netty/NiO模式图.esppyzqmi.webp)
+   ![NiO模式图](https://ChengHaoRan666.github.io/picx-images-hosting/Netty/NiO模式图.esppyzqmi.webp)
 
 3. AIO：java 1.7 添加的网络编程模型。`同步非阻塞`
 
@@ -77,7 +77,7 @@
 
 #### 2.3.1 服务器设计 - 多线程版
 
-![服务器多线程版](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Netty/服务器多线程版.70ajh7lrfp.webp)
+![服务器多线程版](https://ChengHaoRan666.github.io/picx-images-hosting/Netty/服务器多线程版.70ajh7lrfp.webp)
 多线程版有以下问题：
 
 1. 内存占用高，一个线程占用一个连接，每开一个线程，操作系统要为其分配一些系统资源
@@ -90,7 +90,7 @@
 
 #### 2.3.2 服务器设计 - 线程池版
 
-![服务器线程池版](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Netty/服务器线程池版.2h8ie8hdc8.webp)
+![服务器线程池版](https://ChengHaoRan666.github.io/picx-images-hosting/Netty/服务器线程池版.2h8ie8hdc8.webp)
 
 线程池有以下问题：
 
@@ -101,7 +101,7 @@
 
 #### 2.3.3 服务器设计 - selector版
 
-![服务器selector版](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Netty/服务器selector版.6wqxji7c8w.webp)
+![服务器selector版](https://ChengHaoRan666.github.io/picx-images-hosting/Netty/服务器selector版.6wqxji7c8w.webp)
 
 1. `selector`会监听`Channel`的动作，当某一个`Channel`有动作时，`selector`会将动作传达给`thread`
 2. 在`selector`版本中，`Channel`工作在<font color="red">非阻塞状态</font>下
@@ -212,27 +212,27 @@ ByteBuffer结构类似数组，有三个属性：
 
 一开始
 
-![0021](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Netty/0021.wireun2la.webp)
+![0021](https://ChengHaoRan666.github.io/picx-images-hosting/Netty/0021.wireun2la.webp)
 
 写模式下，position 是写入位置，limit 等于容量，下图表示写入了 4 个字节后的状态
 
-![0018](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Netty/0018.1e8t3fog64.webp)
+![0018](https://ChengHaoRan666.github.io/picx-images-hosting/Netty/0018.1e8t3fog64.webp)
 
 flip 动作发生后，position 切换为读取位置，limit 切换为读取限制
 
-![0019](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Netty/0019.6t7blv3ljx.webp)
+![0019](https://ChengHaoRan666.github.io/picx-images-hosting/Netty/0019.6t7blv3ljx.webp)
 
 读取 4 个字节后，状态
 
-![0020](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Netty/0020.54xyoodbdq.webp)
+![0020](https://ChengHaoRan666.github.io/picx-images-hosting/Netty/0020.54xyoodbdq.webp)
 
 clear 动作发生后，状态
 
-![0021](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Netty/0021.wireun2la.webp)
+![0021](https://ChengHaoRan666.github.io/picx-images-hosting/Netty/0021.wireun2la.webp)
 
 compact 方法，是把未读完的部分向前压缩，然后切换至写模式
 
-![0022](https://github.com/ChengHaoRan666/picx-images-hosting/raw/master/Netty/0022.8z6q7mv9b3.webp)
+![0022](https://ChengHaoRan666.github.io/picx-images-hosting/Netty/0022.8z6q7mv9b3.webp)
 
 
 
@@ -625,7 +625,7 @@ public static void main(String[] args) {
 
 
 
-### 3.6 实践
+### 3.6 实践 - 半包，黏包
 
 网络上有多条数据发送给服务端，数据之间使用 \n 进行分隔 但由于某种原因这些数据在接收时，被进行了重新组合，例如原始数据有3条为
 
@@ -1318,3 +1318,273 @@ public static void main(String[] args) throws IOException {
 ```
 
 <font color="red">非阻塞模式下，可以及时处理连接和发送的消息，但是如果没有连接和消息，线程会不停空转，CPU负载大</font>
+
+
+
+
+
+### 5.2 Selector
+
+好处
+
+- 一个线程配合 selector 就可以监控多个 channel 的事件，事件发生线程才去处理。避免非阻塞模式下所做无用功
+- 让这个线程能够被充分利用
+- 节约了线程的数量
+- 减少了线程上下文切换
+
+
+
+#### 5.2.1 使用
+
+##### 5.2.1.1 创建
+
+```java
+Selector selector = Selector.open();
+```
+
+
+
+##### 5.2.1.2 绑定 Channel 事件
+
+也称之为注册事件，绑定的事件 selector 才会关心
+
+```java
+channel.configureBlocking(false);
+SelectionKey key = channel.register(selector, SelectionKey.OP_XXX);
+```
+
+- channel 必须工作在非阻塞模式
+- FileChannel 没有非阻塞模式，因此不能配合 selector 一起使用
+- 绑定的事件类型可以有
+  - connect - 客户端连接成功时触发
+  - accept - 服务器端成功接受连接时触发
+  - read - 数据可读入时触发，有因为接收能力弱，数据暂不能读入的情况
+  - write - 数据可写出时触发，有因为发送能力弱，数据暂不能写出的情况
+
+
+
+##### 5.2.3 监听 Channel 事件
+
+可以通过下面三种方法来监听是否有事件发生，方法的返回值代表有多少 channel 发生了事件
+
+方法1，阻塞直到绑定事件发生
+
+```java
+int count = selector.select();
+```
+
+
+
+方法2，阻塞直到绑定事件发生，或是超时（时间单位为 ms）
+
+```java
+int count = selector.select(long timeout);
+```
+
+
+
+方法3，不会阻塞，也就是不管有没有事件，立刻返回，自己根据返回值检查是否有事件
+
+```java
+int count = selector.selectNow();
+```
+
+
+
+##### 5.2.4 select 何时不阻塞
+
+> - 事件发生时
+>   - 客户端发起连接请求，会触发 accept 事件
+>   - 客户端发送数据过来，客户端正常、异常关闭时，都会触发 read 事件，另外如果发送的数据大于 buffer 缓冲区，会触发多次读取事件
+>   - channel 可写，会触发 write 事件
+>   - 在 linux 下 nio bug 发生时
+> - 调用 selector.wakeup()
+> - 调用 selector.close()
+> - selector 所在线程 interrupt
+
+
+
+
+
+#### 5.2.2 处理 accept 事件
+
+客户端代码:
+
+1. 创建 `socketChannel` 
+2. 连接到服务器
+
+```java
+public static void main(String[] args) throws IOException {
+        try (SocketChannel socketChannel = SocketChannel.open()) {
+            ByteBuffer buffer = ByteBuffer.allocate(20);
+            socketChannel.connect(new InetSocketAddress("localhost", 8080));
+        }
+    }
+```
+
+
+
+服务器端代码：
+
+1. 如果有事件发生，`selector.select();`会让继续运行
+2. 获取所有的发生事件的`keys`集合
+3. 遍历集合，拿到`key`对应的`Channel`
+4. <font color="red">删除`keys`中的这个`key`，防止再次遍历的时候拿到已经处理的`key`从而出错</font>
+5. 判断发生的是什么事件（accept，read，write）
+6. 通过`key`获取对应的`Channel`
+7. 处理对应事件（`accept`事件）
+8. `Channel`调用`accept`方法建立和客户端的连接，设置非阻塞模式
+9. 将和客户端的连接注册在`Selector`里
+
+```java
+ByteBuffer buffer = ByteBuffer.allocate(16);
+
+// 创建selector
+Selector selector = Selector.open();
+
+// 创建Channel,设置为非阻塞模式,设置端口
+ServerSocketChannel ssc = ServerSocketChannel.open();
+ssc.configureBlocking(false);
+ssc.bind(new InetSocketAddress(8080));
+
+// 注册，将 ServerSocketChannel 和 selector 进行绑定
+// sscKey 就是事件发生后，通过他可以得到那个Channel发生的，第二个参数就是设置关注哪个事件
+SelectionKey sscKey = ssc.register(selector, SelectionKey.OP_ACCEPT, null);
+log.debug("注册的key：{}", sscKey);
+
+while (true) {
+    // 阻塞，如果没有事件发生就停着
+    selector.select();
+
+    // 获取所有发送事件的 selectionKey
+    Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
+
+    // 循环处理事件
+    while (iter.hasNext()) {
+        SelectionKey selectionKey = iter.next();
+        log.debug("发生事件的key：{},事件类型：{}", selectionKey, selectionKey.interestOps());
+        // 清除已处理的事件
+        iter.remove();
+
+        // 如果是建立连接的事件
+        if (selectionKey.isAcceptable()) {
+            // 获取发生事件的连接
+            ServerSocketChannel channel = (ServerSocketChannel) selectionKey.channel();
+            // 建立和客户端的连接
+            SocketChannel sc = channel.accept();
+            // 设置工作在非阻塞模式
+            sc.configureBlocking(false);
+            // 注册在Selector，让Selector管理sc的read
+            SelectionKey scKey = sc.register(selector, SelectionKey.OP_READ);
+            log.debug("注册的key：{}", scKey);
+            log.debug("提出连接事件的SocketChannel：{}", sc);
+        }
+    }
+}
+```
+
+
+
+💡 **事件发生后能否不处理**
+
+> 事件发生后，要么处理，要么取消（cancel），不能什么都不做，否则下次该事件仍会触发，这是因为 nio 底层使用的是水平触发
+
+
+
+
+
+#### 5.2.3 处理 read 事件
+
+服务器端代码：
+
+1. 如果有事件发生，`selector.select();`会让继续运行
+2. 获取所有的发生事件的`keys`集合
+3. 遍历集合，拿到`key`对应的`Channel`
+4. <font color="red">删除`keys`中的这个`key`，防止再次遍历的时候拿到已经处理的`key`从而出错</font>
+5. 判断发生的是什么事件（accept，read，write）
+6. 通过`key`获取对应的`Channel`
+7. 处理对应事件（`read`事件）
+8. 通过`read`方法读取内容，如果返回值-1说明结束，撤销注册
+9. 如果发生异常撤销注册
+
+```java
+ByteBuffer buffer = ByteBuffer.allocate(16);
+
+// 创建selector
+Selector selector = Selector.open();
+
+// 创建Channel,设置为非阻塞模式,设置端口
+ServerSocketChannel ssc = ServerSocketChannel.open();
+ssc.configureBlocking(false);
+ssc.bind(new InetSocketAddress(8080));
+
+// 注册，将 ServerSocketChannel 和 selector 进行绑定
+// sscKey 就是事件发生后，通过他可以得到那个Channel发生的，第二个参数就是设置关注哪个事件
+SelectionKey sscKey = ssc.register(selector, SelectionKey.OP_ACCEPT, null);
+log.debug("注册的key：{}", sscKey);
+
+while (true) {
+    // 阻塞，如果没有事件发生就停着
+    selector.select();
+
+    // 获取所有发送事件的 selectionKey
+    Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
+
+    // 循环处理事件
+    while (iter.hasNext()) {
+        SelectionKey selectionKey = iter.next();
+        log.debug("发生事件的key：{},事件类型：{}", selectionKey, selectionKey.interestOps());
+        // 清除已处理的事件
+        iter.remove();
+
+        // 如果是建立连接的事件
+        if (selectionKey.isAcceptable()) {
+            // 获取发生事件的连接
+            ServerSocketChannel channel = (ServerSocketChannel) selectionKey.channel();
+            // 建立和客户端的连接
+            SocketChannel sc = channel.accept();
+            // 设置工作在非阻塞模式
+            sc.configureBlocking(false);
+            // 注册在Selector，让Selector管理sc的read
+            SelectionKey scKey = sc.register(selector, SelectionKey.OP_READ);
+            log.debug("注册的key：{}", scKey);
+            log.debug("提出连接事件的SocketChannel：{}", sc);
+        }
+
+        // 如果是 read 事件
+        else if (selectionKey.isReadable()) {
+            // 获取发生事件的连接
+            SocketChannel channel = (SocketChannel) selectionKey.channel();
+
+            int read = channel.read(buffer);
+
+            if (read == -1) {
+                log.debug("客户端已关闭连接：{}", channel);
+                selectionKey.cancel(); // 从selector中取消注册
+                channel.close();
+            } else if (read > 0) {
+                buffer.flip();
+                debugAll(buffer);
+                buffer.clear(); // 清空buffer，准备下次读
+            }
+        }
+    }
+}
+```
+
+
+
+**为什么要遍历的时候要删除？**
+
+> `selector`维护了两个列表
+>
+> 一个是注册的`Channel`的列表，可以通过`selector.keys()`获取，`cancel `方法移除
+>
+> 一个是发生了事件的`Channel`的列表，可以通过`selector.selectedKeys()`获取
+>
+>
+> 对于发生了事件的列表（`selectedKeys()`获取的列表），处理了之后NIO是不会自己删除，如果不手动删除就会再次进入处理这个事件发生错误，例如：
+>
+> - 第一次触发了 `ssckey `上的 `accept `事件，没有移除 `ssckey`
+> - 第二次触发了 `sckey `上的 `read `事件，但这时 `selectedKeys `中还有上次的 `ssckey `，在处理时因为没有真正的 `serverSocket `连上了，就会导致空指针异常
+
