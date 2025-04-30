@@ -1437,8 +1437,6 @@ public static void main(String[] args) throws IOException {
 9. 将和客户端的连接注册在`Selector`里
 
 ```java
-ByteBuffer buffer = ByteBuffer.allocate(16);
-
 // 创建selector
 Selector selector = Selector.open();
 
@@ -1474,8 +1472,10 @@ while (true) {
             SocketChannel sc = channel.accept();
             // 设置工作在非阻塞模式
             sc.configureBlocking(false);
-            // 注册在Selector，让Selector管理sc的read
-            SelectionKey scKey = sc.register(selector, SelectionKey.OP_READ);
+            // 创建 ByteBuffer，把他和 SocketChannel 关联
+            ByteBuffer buffer = ByteBuffer.allocate(16);
+            // 注册在Selector，让Selector管理sc的read,设置 selector 的附件 ByteBuffer
+            SelectionKey scKey = sc.register(selector, SelectionKey.OP_READ, buffer);
             log.debug("注册的key：{}", scKey);
             log.debug("提出连接事件的SocketChannel：{}", sc);
         }
@@ -1537,20 +1537,6 @@ while (true) {
         // 清除已处理的事件
         iter.remove();
 
-        // 如果是建立连接的事件
-        if (selectionKey.isAcceptable()) {
-            // 获取发生事件的连接
-            ServerSocketChannel channel = (ServerSocketChannel) selectionKey.channel();
-            // 建立和客户端的连接
-            SocketChannel sc = channel.accept();
-            // 设置工作在非阻塞模式
-            sc.configureBlocking(false);
-            // 注册在Selector，让Selector管理sc的read
-            SelectionKey scKey = sc.register(selector, SelectionKey.OP_READ);
-            log.debug("注册的key：{}", scKey);
-            log.debug("提出连接事件的SocketChannel：{}", sc);
-        }
-
         // 如果是 read 事件
         else if (selectionKey.isReadable()) {
             // 获取发生事件的连接
@@ -1574,7 +1560,7 @@ while (true) {
 
 
 
-**为什么要遍历的时候要删除？**
+##### 为什么要遍历的时候要删除？
 
 > `selector`维护了两个列表
 >
@@ -1588,3 +1574,64 @@ while (true) {
 > - 第一次触发了 `ssckey `上的 `accept `事件，没有移除 `ssckey`
 > - 第二次触发了 `sckey `上的 `read `事件，但这时 `selectedKeys `中还有上次的 `ssckey `，在处理时因为没有真正的 `serverSocket `连上了，就会导致空指针异常
 
+
+
+
+
+##### 怎么处理消息的边界？
+
+消息边界问题：在客户端向服务器发送消息时，服务器的`ByteBuffer`长度有限，不可能一次全部接收完，会出现以下问题：对于中文会乱码，英文会截取。实际上就是 TCP 的半包/粘包问题，本质是  TCP 无边界流  导致的，需要在应用层人为 设计边界协议 来解决。
+
+```
+2025-04-29 19:53:17 [main] - 发生事件的key：channel=java.nio.channels.SocketChannel[connected local=/127.0.0.1:8080 remote=/127.0.0.1:5500], selector=sun.nio.ch.WEPollSelectorImpl@703580bf, interestOps=1, readyOps=1,事件类型：1
+2025-04-29 19:53:17 [main] - 读取的内容：鹅鹅鹅，曲�
+2025-04-29 19:53:17 [main] - 发生事件的key：channel=java.nio.channels.SocketChannel[connected local=/127.0.0.1:8080 remote=/127.0.0.1:5500], selector=sun.nio.ch.WEPollSelectorImpl@703580bf, interestOps=1, readyOps=1,事件类型：1
+2025-04-29 19:53:17 [main] - 读取的内容：��向天歌
+```
+
+```
+2025-04-29 19:54:52 [main] - 发生事件的key：channel=java.nio.channels.SocketChannel[connected local=/127.0.0.1:8080 remote=/127.0.0.1:5500], selector=sun.nio.ch.WEPollSelectorImpl@703580bf, interestOps=1, readyOps=1,事件类型：1
+2025-04-29 19:54:52 [main] - 读取的内容：qwertyuiopasdfgh
+2025-04-29 19:54:52 [main] - 发生事件的key：channel=java.nio.channels.SocketChannel[connected local=/127.0.0.1:8080 remote=/127.0.0.1:5500], selector=sun.nio.ch.WEPollSelectorImpl@703580bf, interestOps=1, readyOps=1,事件类型：1
+2025-04-29 19:54:52 [main] - 读取的内容：jklzxcvbnmqwerty
+2025-04-29 19:54:52 [main] - 发生事件的key：channel=java.nio.channels.SocketChannel[connected local=/127.0.0.1:8080 remote=/127.0.0.1:5500], selector=sun.nio.ch.WEPollSelectorImpl@703580bf, interestOps=1, readyOps=1,事件类型：1
+2025-04-29 19:54:52 [main] - 读取的内容：uiop
+```
+
+
+
+处理消息边界问题有三种思路：
+
+1. 固定消息长度，数据包大小一样，服务器按预定长度读取，缺点是浪费带宽
+
+   ```mermaid
+   sequenceDiagram 
+   participant c1 as 客户端1
+   participant s as 服务器
+   participant b1 as ByteBuffer1
+   participant b2 as ByteBuffer2
+   c1 ->> s: 发送 01234567890abcdef3333\r
+   s ->> b1: 第一次 read 存入 01234567890abcdef
+   s ->> b2: 扩容
+   b1 ->> b2: 拷贝 01234567890abcdef
+   s ->> b2: 第二次 read 存入 3333\r
+   b2 ->> b2: 01234567890abcdef3333\r
+   ```
+
+   
+
+2. 按分隔符拆分，缺点是效率低
+
+3. TLV 格式，即 Type 类型、Length 长度、Value 数据，类型和长度已知的情况下，就可以方便获取消息大小，分配合适的 buffer，缺点是 buffer 需要提前分配，如果内容过大，则影响 server 吞吐量
+
+   - Http 1.1 是 TLV 格式
+   - Http 2.0 是 LTV 格式
+
+
+
+##### ByteBuffer 大小分配
+
+- 每个 channel 都需要记录可能被切分的消息，因为 ByteBuffer 不能被多个 channel 共同使用，因此需要为每个 channel 维护一个独立的 ByteBuffer
+- ByteBuffer 不能太大，比如一个 ByteBuffer 1Mb 的话，要支持百万连接就要 1Tb 内存，因此需要设计大小可变的 ByteBuffer
+  - 一种思路是首先分配一个较小的 buffer，例如 4k，如果发现数据不够，再分配 8k 的 buffer，将 4k buffer 内容拷贝至 8k buffer，优点是消息连续容易处理，缺点是数据拷贝耗费性能，参考实现 http://tutorials.jenkov.com/java-performance/resizable-array.html
+  - 另一种思路是用多个数组组成 buffer，一个数组不够，把多出来的内容写入新的数组，与前面的区别是消息存储不连续解析复杂，优点是避免了拷贝引起的性能损耗
