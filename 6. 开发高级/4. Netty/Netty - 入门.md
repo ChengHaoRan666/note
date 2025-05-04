@@ -384,3 +384,315 @@ static void invokeChannelRead(final AbstractChannelHandlerContext next, Object m
 
 - 如果两个 handler 绑定的是同一个线程，那么就直接调用
 - 否则，把要调用的代码封装为一个任务对象，由下一个 handler 的线程来调用
+
+
+
+## 3. Channel
+
+channel 的主要方法：
+
+- `close() `可以用来关闭 `channel`
+- `closeFuture()` 用来处理 `channel `的关闭，在关闭后再做一些处理
+  - `sync `方法作用是同步等待 `channel `关闭
+  - 而 `addListener `方法是异步等待 `channel `关闭
+- `pipeline()` 方法添加处理器
+- `write()` 方法将数据写入
+- `writeAndFlush()` 方法将数据写入并刷出
+
+> `write`方法只会把内容写入缓冲区，不会立即发送给服务器，只会在缓冲区满了或者调用`flush()`方法的时候才会发送
+>
+> `writeAndFlush`方法会将写入数据立即发送给服务器
+
+
+
+#### ChannelFuture
+
+这时刚才的客户端代码
+
+```java
+new Bootstrap()
+    .group(new NioEventLoopGroup())
+    .channel(NioSocketChannel.class)
+    .handler(new ChannelInitializer<NioSocketChannel>() {
+        @Override
+        protected void initChannel(NioSocketChannel nioSocketChannel){
+            nioSocketChannel.pipeline().addLast(new StringEncoder());
+        }
+    })
+    .connect("127.0.0.1", 8080)
+    .sync()
+    .channel()
+    .writeAndFlush("123");
+```
+
+
+
+现在把它拆开来看
+
+```java
+ChannelFuture channelFuture = new Bootstrap()
+    .group(new NioEventLoopGroup())
+    .channel(NioSocketChannel.class)
+    .handler(new ChannelInitializer<NioSocketChannel>() {
+        @Override
+        protected void initChannel(NioSocketChannel nioSocketChannel){
+            nioSocketChannel.pipeline().addLast(new StringEncoder());
+        }
+    })
+    .connect("127.0.0.1", 8080);
+
+log.debug("sync前的channelFuture：{}  channel：{}", channelFuture, channelFuture.channel());
+channelFuture.sync();
+log.debug("sync后的channelFuture：{}  channel：{}", channelFuture, channelFuture.channel());
+Channel channel = channelFuture.channel();
+
+
+channel.writeAndFlush("123");
+```
+
+
+
+- `connect`绑定ip端口后返回的是 ChannelFuture 对象，它的作用是利用 channel() 方法来获取 Channel 对象
+
+> **注意** connect 方法是==异步非阻塞==的，意味着不等连接建立，方法执行就返回了。因此 channelFuture 对象中不能【立刻】获得到正确的 Channel 对象，需要执行`sync`方法阻塞，直到连接建立
+>
+>
+> 在sync上下分别打印channelFuture和channel可以看到，他们的状态不一样：
+>
+> 2025-05-04 10:42:02 [main] - sync前的channelFuture：AbstractBootstrap\$PendingRegistrationPromise@5ddcc487(incomplete) 
+> channel：[id: 0x309f0963]
+>
+> 2025-05-04 10:42:02 [main] - sync后的channelFuture：AbstractBootstrap$PendingRegistrationPromise@5ddcc487(success)  
+> channel：[id: 0x309f0963, L:/127.0.0.1:4562 - R:/127.0.0.1:8080]
+>
+> 在`cync`之前还未进行建立连接，状态为未建立连接，还没分配本地ip端口号，远程ip端口号
+>
+> 在`cync`之后建立了连接，状态为已建立连接，分配了本地ip端口号，远程ip端口号
+
+
+
+##### 处理`connect`连接未建立：
+
+<font color="red">`channelFuture`就是解决连接时异步可能未连接的情况的</font>
+
+方法一：`sync()`
+
+用`sync`方法阻塞，只有建立连接才继续向下运行
+
+
+
+方法二：`addListener()`
+
+用`addListener`方法将连接和连接之后的任务全部让另一个线程执行，本线程不阻塞
+
+```java
+ChannelFuture channelFuture = new Bootstrap()
+    .group(new NioEventLoopGroup())
+    .channel(NioSocketChannel.class)
+    .handler(new ChannelInitializer<NioSocketChannel>() {
+        @Override
+        protected void initChannel(NioSocketChannel nioSocketChannel) {
+            nioSocketChannel.pipeline().addLast(new StringEncoder());
+        }
+    })
+    .connect("127.0.0.1", 8080);
+
+
+log.debug("addListener前的channelFuture：{}  channel：{}", channelFuture, channelFuture.channel());
+channelFuture.addListener(new ChannelFutureListener() {
+    @Override
+    public void operationComplete(ChannelFuture channelFuture) throws Exception {
+        Channel channel = channelFuture.channel();
+        log.debug("addListener后的channelFuture：{}  channel：{}", channelFuture, channelFuture.channel());
+        channel.writeAndFlush("123");
+    }
+});
+```
+
+> 可以看打印的日志：
+>
+> 2025-05-04 10:54:22 [main] - addListener前的channelFuture：AbstractBootstrap\$PendingRegistrationPromise@291f18(incomplete) 
+>  channel：[id: 0x3c3c7b77]
+>
+> 2025-05-04 10:54:22 [nioEventLoopGroup-2-1] - addListener后的channelFuture：AbstractBootstrap$PendingRegistrationPromise@291f18(success)  
+> channel：[id: 0x3c3c7b77, L:/127.0.0.1:4955 - R:/127.0.0.1:8080]
+>
+>
+> 连接后的事情是由连接的线程执行回调方法执行的，发送数据也在回调方法中，这样主线程就不会阻塞
+
+
+
+
+
+#### CloseFuture
+
+如果需要在结束channel 后在做一些操作（优雅关闭）等，需要用`closeFuture`，`close`方法是阻塞的，保证是在真正关闭后进行的操作
+
+> 实现客户端在控制台输入字符，在服务器端接收打印
+
+服务器端：（没变）
+
+```java
+new ServerBootstrap()
+    .group(new NioEventLoopGroup(), new NioEventLoopGroup(2))
+    .channel(NioServerSocketChannel.class)
+    .childHandler(new ChannelInitializer<NioSocketChannel>() {
+        @Override
+        protected void initChannel(NioSocketChannel nioSocketChannel) throws Exception {
+            nioSocketChannel.pipeline().
+                addLast(new StringDecoder())
+                .addLast(new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+                        System.out.println(msg);
+                        super.channelRead(ctx, msg);
+                    }
+                });
+        }
+    }).bind(8080);
+log.debug("服务器启动");
+```
+
+客户端：版本一
+
+拿到channel，另外开一个线程，让他接受控制台输入的内容，传给服务器，输入q结束
+
+```java
+ChannelFuture channelFuture = new Bootstrap()
+    .group(new NioEventLoopGroup())
+    .channel(NioSocketChannel.class)
+    .handler(new ChannelInitializer<NioSocketChannel>() {
+        @Override
+        protected void initChannel(NioSocketChannel nioSocketChannel) {
+            nioSocketChannel.pipeline().addLast(new StringEncoder());
+        }
+    })
+    .connect("127.0.0.1", 8080);
+
+channelFuture.sync();
+Channel channel = channelFuture.channel();
+
+new Thread(() -> {
+    Scanner sr = new Scanner(System.in);
+    while (true) {
+        String line = sr.nextLine();
+        log.debug("输入内容：{}", line);
+        if (!line.equals("q")) {
+            channel.writeAndFlush(line);
+        } else {
+            channel.close();
+            log.debug("关闭连接");
+            break;
+        }
+    }
+}, "input").start();
+```
+
+版本一有个问题：
+
+如果输入q他调用`channel.close`方法，`close`方法是异步的，无法确保关闭后的操作一定是发生在关闭之后的
+
+
+
+客户端：版本二
+
+- 使用`closeFuture`让主线程在`channel`关闭后才继续往下执行
+
+- 使用`addListener`让关闭`channel`的线程继续执行主线程后续代码，让他不阻塞主线程
+
+```java
+ChannelFuture channelFuture = new Bootstrap()
+                .group(new NioEventLoopGroup())
+                .channel(NioSocketChannel.class)
+                .handler(new ChannelInitializer<NioSocketChannel>() {
+                    @Override
+                    protected void initChannel(NioSocketChannel nioSocketChannel) {
+                        // 添加一个handler，用于调试打印日志
+                        nioSocketChannel.pipeline().addLast(new LoggingHandler(LogLevel.DEBUG));
+                        nioSocketChannel.pipeline().addLast(new StringEncoder());
+                    }
+                })
+                .connect("127.0.0.1", 8080);
+
+        channelFuture.sync();
+        Channel channel = channelFuture.channel();
+
+        new Thread(() -> {
+            Scanner sr = new Scanner(System.in);
+            while (true) {
+                String line = sr.nextLine();
+                if (!line.equals("q")) {
+                    channel.writeAndFlush(line);
+                } else {
+                    channel.close();
+                    break;
+                }
+            }
+        }, "input").start();
+
+//		  方法一
+//        channel.closeFuture().sync();
+//        log.debug("主线程在关闭连接后的操作");
+
+//      方法二
+        channel.closeFuture().addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture channelFuture) {
+                log.debug("主线程在关闭连接后的操作");
+            }
+        });
+```
+
+> 2025-05-04 14:47:38 [nioEventLoopGroup-2-1] - 主线程在关闭连接后的操作
+> 打印日志表示操作在nio线程中执行，未阻塞主线程
+
+
+
+##### 优雅停止
+
+在客户端输入停止字符时，关闭向服务器发数据的线程，关闭EventLoopGroup
+
+```java
+NioEventLoopGroup group = new NioEventLoopGroup();
+        ChannelFuture channelFuture = new Bootstrap()
+                .group(group)
+                .channel(NioSocketChannel.class)
+                .handler(new ChannelInitializer<NioSocketChannel>() {
+                    @Override
+                    protected void initChannel(NioSocketChannel nioSocketChannel) {
+                        // 添加一个handler，用于调试打印日志
+                        nioSocketChannel.pipeline().addLast(new LoggingHandler(LogLevel.DEBUG));
+                        nioSocketChannel.pipeline().addLast(new StringEncoder());
+                    }
+                })
+                .connect("127.0.0.1", 8080);
+
+        channelFuture.sync();
+        Channel channel = channelFuture.channel();
+
+        new Thread(() -> {
+            Scanner sr = new Scanner(System.in);
+            while (true) {
+                String line = sr.nextLine();
+                if (!line.equals("q")) {
+                    channel.writeAndFlush(line);
+                } else {
+                    channel.close();
+                    break;
+                }
+            }
+        }, "input").start();
+
+//        channel.closeFuture().sync();
+//        log.debug("主线程在关闭连接后的操作");
+
+        channel.closeFuture().addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture channelFuture) {
+                log.debug("主线程在关闭连接后的操作");
+                group.shutdownGracefully();
+            }
+        });
+```
+
+> 主要方法： group.shutdownGracefully()  优雅关闭，先停止发送，再关闭连接

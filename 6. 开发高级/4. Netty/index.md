@@ -64,14 +64,14 @@
 | 第2章_08-netty入门-eventloop-io任务                          | 14:32 |
 | 第2章_09-netty入门-eventloop-分工细化                        | 06:49 |
 | 第2章_10-netty入门-eventloop-分工细化                        | 13:24 |
-| 第2章_11-netty入门-eventloop-切换线程==完成==                | 10:03 |
+| 第2章_11-netty入门-eventloop-切换线程                        | 10:03 |
 | 第2章_12-netty入门-channel                                   | 04:39 |
 | 第2章_13-netty入门-channelFuture-连接问题                    | 10:10 |
 | 第2章_14-netty入门-channelFuture-处理结果                    | 09:15 |
 | 第2章_15-netty入门-channelFuture-关闭问题                    | 06:44 |
 | 第2章_16-netty入门-channelFuture-处理关闭                    | 10:42 |
 | 第2章_17-netty入门-channelFuture-处理关闭==第五天2h 50min==  | 04:48 |
-| 第2章_18-netty入门-为什么要异步                              | 09:56 |
+| 第2章_18-netty入门-为什么要异步==完成==                      | 09:56 |
 | 第2章_19-netty入门-future-promise-概述                       | 10:13 |
 | 第2章_20-netty入门-jdk-future                                | 07:34 |
 | 第2章_21-netty入门-netty-future                              | 07:59 |
