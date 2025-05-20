@@ -300,14 +300,14 @@ System.out.println(channel);
 ```java
 // boss 负责 ServerSocketChannel 上的 accept 事件
 // worker 负责 SocketChannel 上的 read write 事件 
-.group( new NioEventLoopGroup(), new NioEventLoopGroup())
+.group(new NioEventLoopGroup(), new NioEventLoopGroup())
 ```
 
 
 
 ##### 更进一步：
 
-在处理IO事件时，如果有一个任务很耗时，那么就会耽误`EventLoop`的其他事件处理，这时候可以把这个事件由其他`Group`处理，具体方法就是在`addLast`时指定给哪个`EventLoopGroup`处理，第二个参数时名字
+在处理IO事件时，如果有一个任务很耗时，那么就会耽误`EventLoop`的其他事件处理，这时候可以把这个事件由其他`Group`处理，具体方法就是在`addLast`时指定给哪个`EventLoopGroup`处理，第二个参数是名字
 
 ```java
 DefaultEventLoopGroup defaultEventLoopGroup = new DefaultEventLoopGroup();
@@ -356,7 +356,7 @@ new ServerBootstrap()
 
 ##### handler 执行中如何换人？
 
-关键代码 `io.netty.channel.AbstractChannelHandlerContext#invokeChannelRead()`
+关键代码 `io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead()`
 
 ```java
 static void invokeChannelRead(final AbstractChannelHandlerContext next, Object msg) {
@@ -696,3 +696,200 @@ NioEventLoopGroup group = new NioEventLoopGroup();
 ```
 
 > 主要方法： group.shutdownGracefully()  优雅关闭，先停止发送，再关闭连接
+
+
+
+## 4. Future & Promise
+
+在异步处理时，经常用到这两个接口
+
+首先要说明 netty 中的 Future 与 jdk 中的 Future 同名，但是是两个接口，netty 的 Future 继承自 jdk 的 Future，而 Promise 又对 netty Future 进行了扩展
+
+- jdk Future 只能同步等待任务结束（或成功、或失败）才能得到结果
+- netty Future 可以同步等待任务结束得到结果，也可以异步方式得到结果，但都是要等任务结束
+- netty Promise 不仅有 netty Future 的功能，而且脱离了任务独立存在，只作为两个线程间传递结果的容器
+
+| 功能/名称    | jdk Future                     | netty Future                                                 | Promise      |
+| ------------ | ------------------------------ | ------------------------------------------------------------ | ------------ |
+| cancel       | 取消任务                       | -                                                            | -            |
+| isCanceled   | 任务是否取消                   | -                                                            | -            |
+| isDone       | 任务是否完成，不能区分成功失败 | -                                                            | -            |
+| get          | 获取任务结果，==阻塞等待==     | -                                                            | -            |
+| getNow       | -                              | 获取任务结果，非阻塞，还未产生结果时返回 null                | -            |
+| await        | -                              | 等待任务结束，如果任务失败，不会抛异常，而是通过 isSuccess 判断 | -            |
+| sync         | -                              | 等待任务结束，如果任务失败，抛出异常                         | -            |
+| isSuccess    | -                              | 判断任务是否成功                                             | -            |
+| cause        | -                              | 获取失败信息，非阻塞，如果没有失败，返回null                 | -            |
+| addLinstener | -                              | 添加回调，异步接收结果                                       | -            |
+| setSuccess   | -                              | -                                                            | 设置成功结果 |
+| setFailure   | -                              | -                                                            | 设置失败结果 |
+
+
+
+#### JDK的Future：
+
+```java
+package com.chr.netty.Future;
+
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.*;
+
+/**
+ * jdk中的future的使用
+ *
+ * @author 程浩然
+ * @since 2025-05-16
+ */
+@Slf4j
+public class JDKFutureTest {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        log.info("开始");
+        // 定义线程池
+        ExecutorService service = Executors.newFixedThreadPool(3);
+        // 定义任务，用 future 接收返回结果
+        Future<Integer> future = service.submit(new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+                log.info("计算中...");
+                Thread.sleep(2000);
+                return 20;
+            }
+        });
+
+        // 得到的结果
+        log.info("得到的结果：{}", future.get());
+    }
+}
+```
+
+结果：
+
+```
+2025-05-16 19:34:32 [main] - 开始
+2025-05-16 19:34:32 [pool-1-thread-1] - 计算中...
+2025-05-16 19:34:34 [main] - 得到的结果：20
+```
+
+
+
+#### NIO的Future：
+
+```java
+package com.chr.netty.Future;
+
+import io.netty.channel.EventLoop;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+
+/**
+ * Netty中Future的使用
+ *
+ * @author 程浩然
+ * @since 2025-05-16
+ */
+@Slf4j
+public class NIOFutureTest {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        log.info("开始");
+        // 定义线程池
+        NioEventLoopGroup group = new NioEventLoopGroup();
+        EventLoop eventLoop = group.next();
+
+        // 定义任务，用 future 接收返回结果
+        Future<Integer> future = eventLoop.submit(new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+                // 进行计算
+                log.info("进行计算");
+                Thread.sleep(2000);
+                return 30;
+            }
+        });
+
+        // 同步得到的结果
+//        log.info("得到的结果：{}", future.get());
+        future.addListener(new GenericFutureListener<Future<? super Integer>>() {
+            @Override
+            public void operationComplete(Future<? super Integer> future) throws Exception {
+                // 异步得到的结果
+                log.info("得到的结果：{}", future.get());
+
+            }
+        });
+    }
+}
+```
+
+结果(可以异步得到结果）：
+
+```
+2025-05-16 19:35:21 [main] - 开始
+2025-05-16 19:35:22 [nioEventLoopGroup-2-1] - 进行计算
+2025-05-16 19:35:24 [nioEventLoopGroup-2-1] - 得到的结果：30
+```
+
+
+
+#### NIO的Promise：
+
+```java
+package com.chr.netty.Future;
+
+import io.netty.channel.EventLoop;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.Promise;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.ExecutionException;
+
+/**
+ * NIO中Promise的使用
+ *
+ * @author 程浩然
+ * @since 2025-05-16
+ */
+@Slf4j
+public class NIOPromiseTest {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        EventLoop eventLoop = new NioEventLoopGroup().next();
+        Promise<Integer> promise = new DefaultPromise<>(eventLoop);
+
+        new Thread(() -> {
+            log.info("运行");
+            try {
+                // 如果发送错误，可以设置返回值
+                // int i = 1 / 0;
+                Thread.sleep(1000);
+                promise.setSuccess(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                promise.setFailure(e);
+            }
+        }).start();
+
+        log.info("得到的结果：{}", promise.get());
+    }
+}
+```
+
+结果：
+
+```
+2025-05-16 19:40:24 [Thread-0] - 运行
+2025-05-16 19:40:25 [main] - 得到的结果：100
+```
+
+```
+2025-05-16 19:40:54 [Thread-0] - 运行
+Exception in thread "Thread-0" java.lang.ArithmeticException: / by zero
+	at com.chr.netty.Future.NIOPromiseTest.lambda$main$0(NIOPromiseTest.java:27)
+	at java.base/java.lang.Thread.run(Thread.java:833)
+```
+
