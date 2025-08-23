@@ -119,9 +119,91 @@ MongoDB 支持丰富的查询语言，支持读写操作（CRUD），比如数�
 
 ## 2. 常用命令
 
+1. `use 数据库名称` 使用或创建数据库
+2. `show dbs` 查看数据库
+3. `db` 查看当前正在使用的数据库
+4. `db.dropDatabase()` 删除数据库，主要用于删除已经持久化的数据库
 
 
-## 3. 索引使用
+
+5. `db.createCollection(name)` 集合的显式创建
+6. `show collections`或`show tables` 查看集合
+7. `db.集合名.drop()`删除集合
 
 
 
+8. `db.集合名.insertOne({_id:1,name:"张三",age:18})` 插入一条数据
+9. `db.集合名.insertMany([{_id:2,name:"李四"},{name:"王五"}])` 插入多条数据
+10. `db.table1.deleteOne({name:"张三"})`删除一条数据
+11. `db.table1.deleteMany({age:{$lt:18}})`删除符合条件的多条数据
+11. `db.collection.updateOne(<filter>, <update>, <options>)` 修改单个文档
+11. `db.collection.updateMany(<filter>, <update>, <options>)` 修改多个文档
+11. `db.collection.replaceOne(<filter>, <replacement>, <options>)` 替换整个文档
+12. `db.table1.find({age :{$gt: 18}},{age:1,_id:0})`查询数据，只显示age
+12. `db.table1.count({_id:1})`统计满足条件的数量
+12. `db.collection.find().skip(0).limit(10)`查找第一页，每页10条
+
+
+
+> 在创建数据库的时候，使用use创建新的数据库的时候，是在内存中创建的，没有在硬盘中，这时候使用`show dbs`查看数据库是没法找到新创建的数据库的。只有在数据库中插入新的集合的时候才会在硬盘持久化，才可以查看
+
+> 默认的数据库有三个：admin，config，local
+>
+> | 数据库       | 主要用途场景                      | 是否复制                                    | 类比                                                 |
+> | :----------- | :-------------------------------- | :------------------------------------------ | :--------------------------------------------------- |
+> | **`admin`**  | 权限管理、集群管理命令            | **是**（在副本集中会被复制）                | **公司的HR部门**：管理所有员工的权限和身份。         |
+> | **`local`**  | 存储单个节点的特定数据（如oplog） | **否**                                      | **员工的私人备忘录**：只对自己有用，不公开给团队。   |
+> | **`config`** | 存储分片集群的元数据和配置        | **是**（作为副本集运行，称为Config Server） | **项目的总架构图**：所有工人都需要根据它来协同工作。 |
+
+
+
+> 插入数据时可以指定_id的值，如果不指定，会生成随机值
+
+> mongoDB不要求每个数据的格式一样，一个集合的多条数据的字段可能不同
+
+> 在插入时指定不存在的集合名，会自己创建这个集合，这个就是隐式创建
+
+
+
+> 在按照_id删除数据时，要用ObjectId方法包装id
+>
+> `db.table1.deleteOne({_id:ObjectId("68a93006064b8c6f8dd02b84")});`
+
+
+
+> 更新时要使用更新操作符，否则会将内容进行替换
+>
+> `db.table1.updateOne({_id:1},{age:188})`会删除原本的内容，只保留age：188
+>
+> 修改操作符：
+>
+> | 操作符   | 作用                 | 示例                                                         |
+> | -------- | -------------------- | ------------------------------------------------------------ |
+> | `$set`   | 设置字段值           | db.users.updateOne(   { name: "张三" },   { $set: { age: 26 } } |
+> | `$inc`   | 增加/减少数值        | db.users.updateOne(   { name: "张三" },   { $inc: { age: 1 } } ) |
+> | `$push`  | 向数组中添加元素     | db.users.updateOne(   { name: "张三" },   { $push: { hobbies: "摄影" } } ) |
+> | `$each`  | 向数组中添加多个元素 | db.users.updateOne(   { name: "张三" },   { $push: { hobbies: { $each: ["摄影", "旅行"] } } } ) |
+> | `$pull`  | 从数组删除元素       | db.users.updateOne(   { name: "张三" },   { $pull: { hobbies: "游戏" } } ) |
+> | `$unset` | 删除字段             | db.users.updateOne(   { name: "张三" },   { $unset: { phone: "" } } ) |
+>
+> 
+
+
+
+## 3. 索引
+
+
+
+
+
+
+
+## 4. 副本集
+
+
+
+## 5. 分片集群
+
+
+
+## 6. 安全认证
