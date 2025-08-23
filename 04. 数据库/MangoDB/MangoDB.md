@@ -192,7 +192,13 @@ MongoDB 支持丰富的查询语言，支持读写操作（CRUD），比如数�
 
 ## 3. 索引
 
-
+1. `db.table1.getIndexes()` 查看索引
+2. `db.table1.createIndex()`创建索引
+   `db.collection.createIndex({ field: 1 })`单字段索引
+   `db.collection.createIndex({f1:1, f2:-1})`复合索引
+3. `db.table1.dropIndex({_id:1})`删除索引
+4. `db.table1.dropIndexes()`删除所以索引
+5. `db.table1.find({name:"张三"}).explain()`在后面加上explain可以判断索引是否有用
 
 
 
