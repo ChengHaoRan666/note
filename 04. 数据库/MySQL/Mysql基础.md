@@ -171,9 +171,13 @@ where和having的条件的区别：
 
 分页处理中limit后接上起始索引和每页多少条数据，起始索引是要查询的页数（从0开始）
 
+
+
 <font color="red">**单表查询中语句执行顺序：**</font>
 
 <font color="red">**from -> where -> group by -> having -> select -> order by -> limit**</font>
+
+
 
 #### **2.多表查询：**
 
