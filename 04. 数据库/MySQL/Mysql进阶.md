@@ -301,9 +301,44 @@ Mysql对于b+树又做了优化：增加一个指向相邻叶子节点 的链表
 
 ### 2. 索引分类
 
+#### 索引分类
+
+在 MySQL 数据库中，索引的具体类型主要分为以下几类：主键索引、唯一索引、常规索引、全文索引。
+
+| 分类     | 含义                                                 | 特点                     | 关键字   |
+| -------- | ---------------------------------------------------- | ------------------------ | -------- |
+| 主键索引 | 针对于表中主键创建的索引                             | 默认自动创建，只能有一个 | PRIMARY  |
+| 唯一索引 | 避免同一表中某数据列中的值重复                       | 可以有多个               | UNIQUE   |
+| 常规索引 | 快速定位特定数据                                     | 可以有多个               |          |
+| 全文索引 | 全文索引查找的是文本中的关键词，而不是比较索引中的值 | 可以有多个               | FULLTEXT |
 
 
 
+#### 聚集索引&二级索引
+
+而在在InnoDB存储引擎中，根据索引的存储形式，又可以分为以下两种：
+
+| 分类                             | 含义                                                       | 特点                 |
+| -------------------------------- | ---------------------------------------------------------- | -------------------- |
+| 聚集索引<br /> (Clustered Index) | 将数据存储与索引放到了一块，索引结构的叶子节点保存了行数据 | 必须有，而且只有一个 |
+| 二级索引 (Secondary Index)       | 将数据与索引分开存储，索引结构的叶子节点关联的是对应的主键 | 可以存在多个         |
+
+聚集索引选取规则: 
+
+1. 如果存在主键，主键索引就是聚集索引
+2. 如果不存在主键，将使用第一个唯一（UNIQUE）索引作为聚集索引
+3. 如果表没有主键，或没有合适的唯一索引，则 InnoDB 会自动生成一个 rowid 作为隐藏的聚集索引
+
+
+
+聚集索引和二级索引的具体结构如下：
+
+![聚集索引和二级索引](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/聚集索引和二级索引.5fkxoyl0bu.webp)
+
+- <font color="red">聚集索引的叶子节点下挂的是这一行的数据 </font>
+- <font color="red">二级索引的叶子节点下挂的是该字段值对应的主键值</font>
+
+> 回表查询： 先到二级索引中查找数据，找到主键值，然后再到聚集索引中根据主键值，获取 数据的方式，就称之为回表查询。
 
 
 
@@ -311,9 +346,150 @@ Mysql对于b+树又做了优化：增加一个指向相邻叶子节点 的链表
 
 ### 3. 索引语法
 
+#### 创建索引
+```sql
+CREATE [UNIQUE | FULLTEXT] INDEX index_name ON table_name (index_col_name, ...);
+```
+
+- UNIQUE：唯一索引，保证列中值不重复
+- FULLTEXT：全文索引，用于 `CHAR`、`VARCHAR`、`TEXT` 等字段，支持关键词搜索
+- index_name：索引名
+- table_name：表名
+- index_col_name：要建立索引的字段（可以是多个，组合索引）
+
+
+
+#### 查看索引
+
+```sql
+SHOW INDEX FROM table_name;
+```
+
+
+
+#### 删除索引
+
+```sql
+DROP INDEX index_name ON table_name;
+```
+
+
+
 
 
 ### 4. SQL性能分析
+
+#### 1. SQL执行频率
+
+通过 `show [session|global] status` 命令可以提供服务器状态信息
+
+通过如下指令，可以查看当前数据库的INSERT、UPDATE、DELETE、SELECT的访问频次： 
+
+```sql
+-- session 是查看当前会话;
+-- global 是查询全局数据;
+SHOW GLOBAL STATUS LIKE 'Com_______';
+```
+
+查询结果：
+
+| Variable_name                       | Value | 解释                                                        |
+| ----------------------------------- | ----- | ----------------------------------------------------------- |
+| Com_binlog                          | 0     | 执行 `BINLOG` 命令的次数（通常内部使用，用户很少直接执行）  |
+| Com_commit                          | 0     | `COMMIT` 语句执行次数                                       |
+| <font color="red">Com_delete</font> | 0     | `DELETE` 语句执行次数                                       |
+| Com_import                          | 0     | `IMPORT TABLE` 命令的次数（极少使用）                       |
+| <font color="red">Com_insert</font> | 0     | `INSERT` 语句执行次数                                       |
+| Com_repair                          | 0     | `REPAIR TABLE` 命令的次数（主要用于 MyISAM）                |
+| Com_revoke                          | 0     | `REVOKE` 权限命令执行次数                                   |
+| <font color="red">Com_select</font> | 417   | `SELECT` 查询语句执行次数                                   |
+| Com_signal                          | 0     | `SIGNAL` 语句执行次数（主要用于触发器、存储过程的错误处理） |
+| <font color="red">Com_update</font> | 0     | `UPDATE` 语句执行次数                                       |
+| Com_xa_end                          | 0     | `XA END` 命令执行次数（分布式事务相关）                     |
+
+
+
+#### 2. 慢查询日志
+
+慢查询日志记录了所有执行时间超过指定参数（`long_query_time`，单位：秒，默认10秒）的所有 SQL 语句的日志
+
+通过`show variables like 'slow_query_log';`可以查看慢查询日志是否开启
+
+window系统在`C:\ProgramData\MySQL\MySQL Server 8.0`目录下有 my.ini 配置文件
+
+linux系统在`etc/my.cnf`有配置文件
+
+修改配置文件中`slow-query-log=1`即为开启慢查询日志；修改`long_query_time`设置慢查询指定时间
+
+
+
+#### 3. profile详情
+
+show profiles 能够在做SQL优化时帮助我们了解时间都耗费到哪里去了
+
+```sql
+-- 查看是否支持show profiles
+SELECT @@have_profiling;
+```
+
+默认profile是关闭的，还需要开启：
+
+```sql
+-- 设置当前会话profile功能开启
+set session profiling =1;
+-- 设置全局profile功能开启
+set global profiling =1;
+```
+
+可以查看是否开启了profile功能：
+
+```sql
+SHOW VARIABLES LIKE 'profiling';
+```
+
+
+
+可以用命令查看sql执行情况：
+
+```sql
+-- 查看每一条SQL的耗时基本情况
+show profiles;
+
+-- 查看指定query_id的SQL语句各个阶段的耗时情况
+show profile for query query_id;
+
+-- 查看指定query_id的SQL语句CPU的使用情况
+show profile cpu for query query_id;
+```
+
+
+
+#### 4. explain
+
+`EXPLAIN`或者 `DESC` 命令获取 MySQL 如何执行 SELECT 语句的信息，包括在 SELECT 语句执行 过程中表如何连接和连接的顺序
+
+```sql
+-- 直接在select语句之前加上关键字 explain / desc
+EXPLAIN SELECT 字段列表 FROM 表名 WHERE 条件;
+```
+
+例如：
+
+```sql
+-- 执行
+explain select * from c_class;
+```
+
+| 字段         | 含义                                                         |
+| ------------ | ------------------------------------------------------------ |
+| id           | select 查询的序列号，表示查询中执行 select 子句或者是操作表的顺序。（id 相同，执行顺序从上到下；id 不同，值越大，越先执行） |
+| select_type  | 表示 SELECT 的类型，常见取值：<br> - SIMPLE：简单表（不使用表连接或子查询）<br> - PRIMARY：主查询（外层查询）<br> - UNION：UNION 中的第二个或后面的查询语句<br> - SUBQUERY：在 SELECT/WHERE 之后包含子查询 |
+| type         | 表示连接类型，性能由好到差依次为：<br> ==NULL → system → const → eq_ref → ref → range → index → all== |
+| possible_key | 显示可能应用在这张表上的索引，一个或多个                     |
+| key          | 实际使用的索引，如果为 NULL，则表示没有使用索引              |
+| key_len      | 表示索引中使用的字节数，该值为索引字段最大可能长度（非实际使用长度）。在不损失精确性的前提下，长度越短越好 |
+| rows         | MySQL 认为必须要执行查询的行数，在 InnoDB 引擎的表中是估计值，可能并不总是准确 |
+| filtered     | 表示返回结果的行数占需读取行数的百分比，值越大越好。         |
 
 
 
