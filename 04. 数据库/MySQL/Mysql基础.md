@@ -231,6 +231,19 @@ sql语句中嵌套select语句，称为嵌套查询，又称子查询。
 
 
 
+#### 3. 查询语句执行顺序：
+
+1. `FROM`
+2. `ON`（连接条件）
+3. `JOIN`
+4. `WHERE`
+5. `GROUP BY`（开始分组，产生分组结果）
+6. `HAVING`（过滤分组后的结果）
+7. `SELECT`
+8. `DISTINCT`
+9. `ORDER BY`（对最终结果排序）
+10. `LIMIT`
+
 
 
 

@@ -372,7 +372,7 @@ SHOW INDEX FROM table_name;
 | Key_name      | 索引名称                                                 |
 | Seq_in_index  | 索引中列的顺序，从 1 开始                                |
 | Column_name   | 列名                                                     |
-| Collation     | 索引中列的排序方式，A=升序，NULL=未定义                  |
+| Collation     | 索引中列的排序方式，A=升序，D=降序，NULL=未定义          |
 | Cardinality   | 索引中唯一值的估计数量（优化器用来估算成本，不一定精确） |
 | Sub_part      | 前缀索引的长度。如果是整列索引则为 NULL                  |
 | Packed        | 索引是否压缩                                             |
@@ -780,41 +780,72 @@ terminated by ',' lines terminated by '\n' ;
 
 ### 3. order by 优化
 
+排序分为两类：
 
+1. `Using filesort`: 通过表的索引或全表扫描，读取满足条件的数据行，然后在排序缓冲区sort buffer中完成排序操作，所有不是通过索引直接返回排序结果的排序都叫 `FileSort`排序
+2. `Using index`: 通过有序索引顺序扫描直接返回有序数据，这种情况即为 using index，不需要 额外排序，操作效率高
+
+在优化order by 语句时，尽量把`Using filesort`优化为`Using index`
+
+
+
+> 优化原则：
+>
+> 1. 根据排序字段建立合适的索引，多字段排序时，也遵循最左前缀法则
+>
+> 2. 尽量使用覆盖索引，否则需要回表查询在缓冲区中排列，还是`Using filesort`排序
+>
+> 3. 多字段排序, 一个升序一个降序，此时需要注意联合索引在创建时的规则（ASC/DESC）
+>
+>    ```sql
+>    -- 按照age升序排列，phone降序排列
+>    create index idx_user_age_phone_ad on tb_user (age asc, phone desc)
+>    ```
+>
+> 4. 如果不可避免的出现filesort，大数据量排序时，可以适当增大排序缓冲区大小 `sort_buffer_size`(默认256k)
 
 
 
 ### 4. group by 优化
 
+1. 在分组操作时，可以通过索引来提高效率
+2. 分组操作时，索引的使用也是满足最左前缀法则的
+
 
 
 ### 5. limit 优化
 
+在数据量比较大时，如果进行limit分页查询，在查询时，越往后，分页查询效率越低，因为，当在进行分页查询时，如果执行 `limit 2000000,10`，此时需要MySQL排序前 2000010 记录，仅仅返回 2000000 - 2000010 的记录，其他记录丢弃，查询排序的代价非常大
+
+> 优化思路是<font color="red">覆盖索引+子查询</font>的方式优化
 
 
-### 6. count 优化
+
+### 6. update 优化
+
+> InnoDB的行锁是针对索引加的锁，不是针对记录加的锁 ,并且该索引不能失效，否则会从行锁升级为表锁
 
 
 
-### 7. update 优化
+
+
+## 视图
+
+
+
+## 存储过程
+
+
+
+## 触发器
+
+
 
 
 
 
 
 进阶：13h 35min
-
-80min
-
-- [ ] 33. 进阶-SQL优化-主键优化   13:40
-- [ ] 34. 进阶-SQL优化-order by优化   16:40
-- [ ] 35. 进阶-SQL优化-group by优化   06:07
-- [ ] 36. 进阶-SQL优化-limit优化   06:36
-- [ ] 37. 进阶-SQL优化-count优化   10:06
-- [ ] 38. 进阶-SQL优化-update优化(避免行锁升级为表锁)   08:12
-- [ ] 39. 进阶-SQL优化-小结   08:57
-
-
 
 210min
 
