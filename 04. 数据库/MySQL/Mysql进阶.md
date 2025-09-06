@@ -365,8 +365,6 @@ CREATE [UNIQUE | FULLTEXT] INDEX index_name ON table_name (index_col_name, ...);
 SHOW INDEX FROM table_name;
 ```
 
-
-
 | 字段          | 含义                                                     |
 | ------------- | -------------------------------------------------------- |
 | Table         | 表名                                                     |
@@ -577,7 +575,7 @@ explain select * from c_class;
 
 SQL在执行时会进行判断走不走，走哪个索引，我们人为也可以进行干涉
 
-- `use index`： 建议MySQL使用哪一个索引完成此次查询
+- `use index`： 建议 MySQL 使用哪一个索引完成此次查询
 -  `ignore index`： 忽略指定的索引
 - `force index`： 强制使用索引
 
@@ -600,7 +598,7 @@ explain select * from tb_user force index(idx_user) where profession = '计科';
 
 覆盖索引是指 查询使用了索引，并 且需要返回的列，在该索引中已经全部能够找到 
 
-> 当有不在索引中的字段时，需要回表查询得到这个字段值，查询效率低
+> 当有不在索引中的字段时，需要**回表查询**得到这个字段值，查询效率低
 >
 > 当查询的字段值在索引里时，索引创建的b+树的叶子节点有字段值和id，刚好能够返回，不用回表查询
 
