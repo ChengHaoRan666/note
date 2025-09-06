@@ -355,7 +355,7 @@ CREATE [UNIQUE | FULLTEXT] INDEX index_name ON table_name (index_col_name, ...);
 - FULLTEXT：全文索引，用于 `CHAR`、`VARCHAR`、`TEXT` 等字段，支持关键词搜索
 - index_name：索引名
 - table_name：表名
-- index_col_name：要建立索引的字段（可以是多个，组合索引）
+- index_col_name：要建立索引的字段（可以是多个：联合索引）
 
 
 
@@ -383,8 +383,6 @@ SHOW INDEX FROM table_name;
 | Comment       | 备注                                                     |
 | Index_comment | 索引的额外说明                                           |
 | Visible       | MySQL 8.0 引入，YES=可见，NO=不可见                      |
-
-
 
 
 
@@ -505,12 +503,18 @@ explain select * from c_class;
 | ------------- | ------------------------------------------------------------ |
 | id            | select 查询的序列号，表示查询中执行 select 子句或者是操作表的顺序。（id 相同，执行顺序从上到下；id 不同，值越大，越先执行） |
 | select_type   | 表示 SELECT 的类型，常见取值：<br> - SIMPLE：简单表（不使用表连接或子查询）<br> - PRIMARY：主查询（外层查询）<br> - UNION：UNION 中的第二个或后面的查询语句<br> - SUBQUERY：在 SELECT/WHERE 之后包含子查询 |
+| table         | 当前查询所涉及的表或衍生表                                   |
+| partitions    | 匹配的分区（仅分区表时显示）                                 |
 | type          | 表示连接类型，性能由好到差依次为：<br> ==NULL → system → const → eq_ref → ref → range → index → all== |
 | possible_keys | 显示可能应用在这张表上的索引，一个或多个                     |
 | key           | 实际使用的索引，如果为 NULL，则表示没有使用索引              |
 | key_len       | 表示索引中使用的字节数，该值为索引字段最大可能长度（非实际使用长度）。在不损失精确性的前提下，长度越短越好 |
+| ref           | 索引匹配方式/比较对象：<br />const（常量）<br />eq\_ref（唯一索引匹配）<br/>ref（普通索引匹配）<br/>func（函数计算结果）<br/>NULL |
 | rows          | MySQL 认为必须要执行查询的行数，在 InnoDB 引擎的表中是估计值，可能并不总是准确 |
 | filtered      | 表示返回结果的行数占需读取行数的百分比，值越大越好。         |
+| Extra         | 额外信息，说明优化器的选择和操作                             |
+
+
 
 
 
@@ -571,17 +575,74 @@ explain select * from c_class;
 
 #### 4. SQL提示
 
+SQL在执行时会进行判断走不走，走哪个索引，我们人为也可以进行干涉
+
+- `use index`： 建议MySQL使用哪一个索引完成此次查询
+-  `ignore index`： 忽略指定的索引
+- `force index`： 强制使用索引
+
+```sql
+-- use index: 建议使用
+explain select * from tb_user use index(idx_user) where profession = '计科';
+
+-- ignore index: 忽略
+explain select * from tb_user ignore index(idx_user) where profession = '计科';
+
+-- force index: 强制使用
+explain select * from tb_user force index(idx_user) where profession = '计科';
+```
+
 
 
 #### 5. 覆盖索引
+
+尽量使用覆盖索引，减少select *
+
+覆盖索引是指 查询使用了索引，并 且需要返回的列，在该索引中已经全部能够找到 
+
+> 当有不在索引中的字段时，需要回表查询得到这个字段值，查询效率低
+>
+> 当查询的字段值在索引里时，索引创建的b+树的叶子节点有字段值和id，刚好能够返回，不用回表查询
 
 
 
 #### 6. 前缀索引
 
+当字段类型为字符串（varchar，text，longtext等）时，有时候需要索引很长的字符串，这会让 索引变得很大，查询时，浪费大量的磁盘IO， 影响查询效率。此时可以只将字符串的一部分前缀，建立索引，这样可以大大节约索引空间，从而提高索引效率。
+
+```sql
+-- 语法：n表示前缀长度
+create index idx_xxxx on table_name(column(n));
+```
+
+索引长度n的确定：
+
+可以根据索引的选择性来决定，而选择性是指不重复的索引值（基数）和数据表的记录总数的比值， 索引选择性越高则查询效率越高， 唯一索引的选择性是1，这是最好的索引选择性，性能也是最好的。
+
+```sql
+select count(distinct email) / count(*) from tb_user;
+select count(distinct substring(email,1,5)) / count(*) from tb_user;
+```
+
+
+
+![前缀索引](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/前缀索引.67xt84uulk.webp)
+
+
+
 
 
 #### 7. 单列索引与联合索引
+
+- 单列索引：即一个索引只包含单个列
+- 联合索引：即一个索引包含了多个列
+
+> 使用单列索引返回多个字段的话会出现回表查询的情况，如果返回多个字段建议创建联合索引
+>
+>
+> 联合索引是二级索引，b+树的叶子节点是挂着id的
+
+![联合索引b+树](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/联合索引b+树.8adlw6ly5m.webp)
 
 
 
@@ -589,20 +650,23 @@ explain select * from c_class;
 
 ### 6. 索引设计原则
 
+- 针对于数据量较大，且查询比较频繁的表建立索引
+- 针对平常作为查询条件（where）、排序（order by）、分组（group by）操作的字段建立索引  
+- 尽量选择区分度高的列作为索引，尽量建立唯一索引，区分度越高，使用索引的效率越高 
+- 如果是字符串类型的字段，字段的长度较长，可以针对字段的特点，建立前缀索引
+- 尽量使用联合索引，减少单列索引，查询时，联合索引很多时候可以覆盖索引，节省存储空间，避免回表，提高查询效率
+- 要控制索引的数量，索引并不是多多益善，索引越多，维护索引结构的代价也就越大，会影响增删改的效率
+- 如果索引列不能存储 NULL 值，请在创建表时使用 NOT NULL 约束它。优化器知道每列是否包含 NULL 值时，它可以更好地确定哪个索引最有效地用于查询
+
+
+
+
+
+## SQL 优化
+
 
 
 进阶：13h 35min
-
-100min
-
-- [ ] 26. 进阶-索引-使用规则-SQL提示   07:20
-- [ ] 27. 进阶-索引-使用规则-覆盖索引&回表查询   15:45
-- [ ] 28. 进阶-索引-使用规则-前缀索引   14:25
-- [ ] 29. 进阶-索引-使用规则-单列&联合索引   09:56
-- [ ] 30. 进阶-索引-设计原则   05:22
-- [ ] 31. 进阶-索引-小结   10:20
-
-
 
 80min
 
