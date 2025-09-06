@@ -662,13 +662,150 @@ select count(distinct substring(email,1,5)) / count(*) from tb_user;
 
 ## SQL 优化
 
+### 1. 插入数据优化
+
+如果一次性要插入多条数据，可以采用以下措施优化：
+
+1. 批量插入
+2. 手动控制事务
+3. 主键顺序插入
+
+
+
+大批量（上万）插入：
+
+```sql
+-- 客户端连接服务端时，加上参数 -–local-infile
+mysql –-local-infile -u root -p
+
+-- 设置全局参数local_infile为1，开启从本地加载文件导入数据的开关
+set global local_infile = 1;
+
+-- 执行load指令将准备好的数据，加载到表结构中
+load data local infile '/root/sql1.log' into table tb_user fields
+terminated by ',' lines terminated by '\n' ;
+```
+
+
+
+### 2. 主键优化
+
+数据的逻辑存储结构如图：
+
+![InnoDB逻辑结构](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/InnoDB逻辑结构.3uv6p4jsos.webp)
+
+在InnoDB引擎中，数据行Row是记录在逻辑结构 page 页中的，而每一个页的大小是固定的，默认16K。 那也就意味着， 一个页中所存储的行也是有限的，如果插入的数据行row在该页存储不小，将会存储 到下一个页中，页与页之间会通过指针连接。
+
+
+
+#### 页分裂
+
+页可以为空，也可以填充一半，也可以填充100%。每个页包含了2-N行数据(如果一行数据过大，会行 溢出)，根据主键排列。
+
+##### 主键顺序插入：
+
+1. 从磁盘中申请页， 主键顺序插入
+
+![主键顺序插入1](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/主键顺序插入1.8s3nktvcin.webp)
+
+2. 第一个页没有满，继续往第一页插入
+
+![主键顺序插入2](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/主键顺序插入2.b9916fsip.webp)
+
+3.  当第一个也写满之后，再写入第二个页，页与页之间会通过指针连接
+
+![主键顺序插入3](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/主键顺序插入3.6f113mj197.webp)
+
+4.  当第二页写满了，再往第三页写入
+
+![主键顺序插入4](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/主键顺序插入4.13m4iwxlci.webp)
+
+
+
+##### 主键乱序插入：
+
+1. 加入1, 2页都已经写满了，存放了如图所示的数据
+
+![主键乱序插入1](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/主键乱序插入1.9rjqy04ik2.webp)
+
+2. 此时再插入 id 为 50 的记录，不会新开启一个页存入 50
+
+![主键乱序插入2](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/主键乱序插入2.45i0k543vr.webp)
+
+3. 因为索引结构的叶子节点是有顺序的。按照顺序，应该存储在47之后
+
+![主键乱序插入3](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/主键乱序插入3.39lj4ov9l5.webp)
+
+4. 但是47所在的1页，已经写满了，存储不了50对应的数据了。那么此时会开辟一个新的页 3
+
+![主键乱序插入4](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/主键乱序插入4.1zilyddyr3.webp)
+
+5. 但是并不会直接将50存入3页，而是会将1页后一半的数据，移动到3页，然后在3页，插入50
+
+![主键乱序插入5](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/主键乱序插入5.361x6z3d4s.webp)
+
+6. 移动数据，并插入id为50的数据之后，那么此时，这三个页之间的数据顺序是有问题的。 1的下一个页，应该是3， 3的下一个页是2。 所以，此时，需要重新设置链表指针
+
+![主键乱序插入6](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/主键乱序插入6.8l0fpej0cl.webp)
+
+<font color="red">上述的这种现象，称之为 "页分裂"，是比较耗费性能的操作</font>
+
+
+
+#### 页合并
+
+1. 目前表中已有数据的索引结构(叶子节点)如下：
+
+![页合并1](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/页合并1.3nryvkc4e3.webp)
+
+2. 当我们删除一行记录时，实际上记录并没有被物理删除，只是记录被标记（flaged）为删除并且它的空间变得允许被其他记录声明使用
+
+![页合并2](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/页合并2.4xuw1vuxeu.webp)
+
+3. 当我们继续删除2的数据记录
+
+![页合并3](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/页合并3.6m48z2lpnv.webp)
+
+4. 当页中删除的记录达到 MERGE_THRESHOLD（默认为页的50%），InnoDB会开始寻找最靠近的页（前或后）看看是否可以将两个页合并以优化空间使用
+
+![页合并4](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/页合并4.67xt87dukc.webp)
+
+5. 删除数据，并将页合并之后，再次插入新的数据21，则直接插入3页
+
+![页合并5](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/页合并5.wiwnhs6xo.webp)
+
+> 页合并的参数MERGE_THRESHOLD可以自己设置，在创建表或者创建索引时指定
+
+
+
+### 3. order by 优化
+
+
+
+
+
+### 4. group by 优化
+
+
+
+### 5. limit 优化
+
+
+
+### 6. count 优化
+
+
+
+### 7. update 优化
+
+
+
 
 
 进阶：13h 35min
 
 80min
 
-- [ ] 32. 进阶-SQL优化-插入数据   13:29
 - [ ] 33. 进阶-SQL优化-主键优化   13:40
 - [ ] 34. 进阶-SQL优化-order by优化   16:40
 - [ ] 35. 进阶-SQL优化-group by优化   06:07
