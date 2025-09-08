@@ -1104,6 +1104,290 @@ unlock tables;
 
 ## InnoDB 引擎
 
+### 1. 逻辑存储结构
+
+<img src="https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/InnoDB逻辑结构.3uv6p4jsos.webp" alt="InnoDB逻辑结构"/>
+
+1. 表空间：表空间是InnoDB存储引擎逻辑结构的最高层， 如果用户启用了参数 `innodb_file_per_table`(在 8.0版本中默认开启) ，则每张表都会有一个表空间（xxx.ibd），一个mysql实例可以对应多个表空 间，用于存储记录、索引等数据
+2. 段：分为数据段、索引段、回滚段，InnoDB是索引组织表，数据段就是 B+ 树的叶子节点， 索引段即为 B+ 树的非叶子节点。段用来管理多个Extent（区）
+3. 区：表空间的单元结构，每个区的大小为1M。 默认情况下， InnoDB存储引擎页大小为16K， 即一 个区中一共有64个连续的页
+4. 页：是InnoDB 存储引擎磁盘管理的最小单元，每个页的大小默认为 16KB。为了保证页的连续性， InnoDB 存储引擎每次从磁盘申请 4-5 个区
+5. 行：InnoDB 存储引擎数据是按行进行存放的
+   在行中，默认有两个隐藏字段： 
+   1. Trx_id：每次对某条记录进行改动时，都会把对应的事务id赋值给trx_id隐藏列 
+   2. Roll_pointer：每次对某条引记录进行改动时，都会把旧的版本写入到undo日志中，然后这个隐藏列就相当于一个指针，可以通过它来找到该记录修改前的信息
+
+
+
+### 2. 架构
+
+#### 概述
+
+MySQL5.5 版本开始，默认使用InnoDB存储引擎，它擅长事务处理，具有崩溃恢复特性，在日常开发中使用非常广泛。下面是InnoDB架构图，左侧为内存结构，右侧为磁盘结构
+
+![InnoDB架构](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/InnoDB架构.32ibbsgnph.webp)
+
+
+
+#### 内存结构
+
+![内存结构](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/内存结构.1lc6a1drmp.webp)
+
+整个内存结构可以分为四大块：
+
+1. Buffer Pool
+2. Change Buffer
+3. Adaptive Hash Index
+4. Log Buffer
+
+
+
+##### Buffer Pool
+
+InnoDB存储引擎基于磁盘文件存储，访问物理硬盘和在内存中进行访问，速度相差很大，为了尽可能弥补这两者之间的I/O效率的差值，就需要把经常使用的数据加载到缓冲池中，避免每次访问都进行磁盘I/O。 
+
+在InnoDB的缓冲池中不仅缓存了索引页和数据页，还包含了undo页、插入缓存、自适应哈希索引以及 InnoDB的锁信息等等。
+
+缓冲池 Buffer Pool，是主内存中的一个区域，里面可以缓存磁盘上经常操作的真实数据，在执行增 删改查操作时，先操作缓冲池中的数据（若缓冲池没有数据，则从磁盘加载并缓存），然后再以一定频率刷新到磁盘，从而减少磁盘IO，加快处理速度。
+
+
+
+缓冲池以Page页为单位，底层采用链表数据结构管理Page
+
+根据状态，将Page分为三种类型：
+
+- free page：空闲page，未被使用
+- clean page：被使用page，数据没有被修改过
+- dirty page：脏页，被使用page，数据被修改过，数据与磁盘的数据产生了不一致
+
+
+
+##### Change Buffer
+
+Change Buffer，更改缓冲区（针对于非唯一二级索引页），在执行DML语句时，如果这些数据Page 没有在Buffer Pool中，不会直接操作磁盘，而会将数据变更存在更改缓冲区 Change Buffer 中，在未来数据被读取时，再将数据合并恢复到Buffer Pool中，再将合并后的数据刷新到磁盘中
+
+![聚集索引和二级索引](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/聚集索引和二级索引.5fkxoyl0bu.webp)
+
+对于二级索引，通常是非唯一的，并且以相对随机的顺序插入二级索引。同样，删除和更新可能会影响索引树中不相邻的二级索引页，如果每一次都操作磁盘，会造成大量的磁盘IO。有了 ChangeBuffer之后，我们可以在缓冲池中进行合并处理，减少磁盘IO
+
+
+
+##### Adaptive Hash Index
+
+自适应hash索引，用于优化对Buffer Pool数据的查询。MySQL的innoDB引擎中虽然没有直接支持 hash索引，但是给我们提供了一个功能就是这个自适应hash索引。
+
+hash索引在进行等值匹配时，一般性能是要高于B+树的，因为hash索引一般只需要一次IO即可，而B+树，可能需要几次匹配，所以hash索引的效率要高，但是hash索引又不适合做范围查询、模糊匹配等。 
+
+InnoDB存储引擎会监控对表上各索引页的查询，如果观察到在特定的条件下hash索引可以提升速度， 则建立hash索引，称之为自适应hash索引。 自适应哈希索引，**无需人工干预**，是系统根据情况自动完成。 
+
+> 参数： `innodb_adaptive_hash_index`
+>
+> ```sql
+> -- 查看是否开启
+> show variables like 'innodb_adaptive_hash_index'
+> ```
+
+
+
+##### Log Buffer
+
+Log Buffer：日志缓冲区，用来保存要写入到磁盘中的log日志数据（redo log 、undo log）， 默认大小为 16MB，日志缓冲区的日志会定期刷新到磁盘中
+
+如果需要更新、插入或删除许多行的事务，增加日志缓冲区的大小可以节省磁盘 I/O
+
+ 参数: 
+
+- `innodb_log_buffer_size`：缓冲区大小 
+- `innodb_flush_log_at_trx_commit`：日志刷新到磁盘时机，取值主要包含以下三个
+  - 1：日志在每次事务提交时写入并刷新到磁盘，默认值
+  - 0： 每秒将日志写入并刷新到磁盘一次
+  - 2：日志在每次事务提交后写入，并每秒刷新到磁盘一次
+
+
+
+
+
+#### 磁盘结构
+
+![磁盘结构](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/磁盘结构.6pnuzbeh4l.webp)
+
+##### System Tablespace
+
+系统表空间是更改缓冲区的存储区域。如果表是在系统表空间而不是每个表文件或通用表空间中创建 的，它也可能包含表和索引数据。(在MySQL5.x版本中还包含InnoDB数据字典、undolog等)
+
+```sql
+-- innodb_data_file_path 查看
+show variables like 'innodb_data_file_path'
+```
+
+
+
+##### File-Per-Table Tablespaces
+
+如果开启了`innodb_file_per_table`开关 ，则每个表的文件表空间包含单个InnoDB表的数据和索引 ，并存储在文件系统上的单个数据文件中。 
+
+```sql
+-- 开关参数：innodb_file_per_table 该参数默认开启
+show variables like 'innodb_file_per_table'
+```
+
+
+
+##### General Tablespaces
+
+通用表空间，需要通过 CREATE TABLESPACE 语法创建通用表空间，在创建表时，可以指定该表空间。
+
+```sql
+-- 创建表空间
+CREATE TABLESPACE ts_name ADD DATAFILE 'file_name' ENGINE = engine_name;
+
+-- 在创建表的时候指定表空间
+CREATE TABLE xxx ... TABLESPACE ts_name;
+```
+
+
+
+##### Undo Tablespaces
+
+撤销表空间，MySQL实例在初始化时会自动创建两个默认的undo表空间（初始大小16M），用于存储 undo log 日志。
+
+```text
+undo_001 文件
+undo_002 文件
+```
+
+
+
+#####  Temporary Tablespaces
+
+InnoDB 使用会话临时表空间和全局临时表空间。存储用户创建的临时表等数据。
+
+
+
+##### Doublewrite Buffer Files
+
+双写缓冲区，innoDB引擎将数据页从Buffer Pool刷新到磁盘前，先将数据页写入双写缓冲区文件 中，便于系统异常时恢复数据。
+
+```text
+#ib_16384_0.dblwr 文件
+#ib_16384_1.dblwr 文件
+```
+
+
+
+##### Redo Log
+
+重做日志，是用来实现事务的持久性
+
+该日志文件由两部分组成：重做日志缓冲（redo log buffer）以及重做日志文件（redo log）
+
+前者是在内存中，后者在磁盘中
+
+当事务提交之后会把所 有修改信息都会存到该日志中, 用于在刷新脏页到磁盘时,发生错误时, 进行数据恢复使用
+
+
+
+#### 后台线程
+
+![后台线程](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/后台线程.1lc6a8cguq.webp)
+
+后台线程的主要作用就是将内存缓冲池的数据在合适的时机写入磁盘中。在InnoDB的后台线程中，分为4类，分别是：
+
+- Master Thread
+- IO Thread
+- Purge Thread
+- Page Cleaner Thread
+
+
+
+##### Master Thread
+
+核心后台线程，负责调度其他线程，还负责将缓冲池中的数据异步刷新到磁盘中, 保持数据的一致性， 还包括脏页的刷新、合并插入缓存、undo页的回收
+
+
+
+##### IO Thread
+
+在InnoDB存储引擎中大量使用了AIO来处理IO请求, 这样可以极大地提高数据库的性能，而IO Thread主要负责这些IO请求的回调
+
+| 线程类型             | 默认个数 | 职责                         |
+| -------------------- | -------- | ---------------------------- |
+| Read thread          | 4        | 负责读操作                   |
+| Write thread         | 4        | 负责写操作                   |
+| Log thread           | 1        | 负责将日志缓冲区刷新到磁盘   |
+| Insert buffer thread | 1        | 负责将写缓冲区内容刷新到磁盘 |
+
+```sql
+-- 查看InnoDB状态信息，就包括IO Thread的信息
+show engine innodb status;
+```
+
+
+
+##### Purge Thread
+
+主要用于回收事务已经提交了的undo log，在事务提交之后，undo log可能不用了，就用它来回 收
+
+
+
+##### Page Cleaner Thread
+
+协助 Master Thread 刷新脏页到磁盘的线程，它可以减轻 Master Thread 的工作压力，减少阻塞
+
+
+
+### 3. 事务原理
+
+#### 事务基础
+
+**原子性**：事务是不可分割的最小操作单元，要么全部成功，要么全部失败。
+
+**一致性**：事务完成时，必须使所有的数据都保持一致状态。
+
+**隔离性**：数据库系统提供的隔离机制，保证事务在不受外部并发操作影响的独立环境下运行。
+
+**持久性**：事务一旦提交或回滚，它对数据库中的数据的改变就是永久的。
+
+
+
+事务的原子性，一致性，隔离性，持久性是由`redo log`，`undo log`实现的
+
+事务的隔离性是由`MVCC`实现的
+
+
+
+#### redo log
+
+重做日志，记录的是事务提交时数据页的物理修改，是用来实现事务的**持久性**
+
+该日志文件由两部分组成：
+
+1. 重做日志缓冲（redo log buffer）以及重做日志文件（redo log file）
+2. 前者是在内存中，后者在磁盘中
+3. 当事务提交之后会把所有修改信息都存到该日志文件中, 用于在刷新脏页到磁盘,发生错误时, 进行数据恢复使用
+
+
+
+#### undo log
+
+回滚日志，用于记录数据被修改前的信息 , 作用包含两个 : 提供回滚(保证事务的原子性) 和 MVCC(多版本并发控制) 
+
+undo log和redo log记录物理日志不一样，它是逻辑日志
+
+可以认为当delete一条记录时，undo log中会记录一条对应的insert记录，反之亦然，当update一条记录时，它记录一条对应相反的 update记录
+
+当执行rollback时，就可以从undo log中的逻辑记录读取到相应的内容并进行回滚
+
+ Undo log销毁：undo log在事务执行时产生，事务提交时，并不会立即删除undo log，因为这些 日志可能还用于MVCC
+
+Undo log存储：undo log采用段的方式进行管理和记录，存放在前面介绍的 rollback segment 回滚段中，内部包含1024个undo log segment
+
+
+
+
+
+### 4. MVCC
+
 
 
 
