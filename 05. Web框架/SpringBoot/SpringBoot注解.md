@@ -30,13 +30,13 @@
 >
 > 例：@Import({one.class})
 
-> ==@Component==：用于普通创建对象
+> <mark>@Component</mark>：用于普通创建对象
 >
-> ==@Service==：用于 service 层
+> <mark>@Service</mark>：用于 service 层
 >
-> ==@Controller==用于 web 层
+> <mark>@Controller</mark>用于 web 层
 >
-> ==@Repository==：用于 dao 层
+> <mark>@Repository</mark>：用于 dao 层
 
 > @Conditional 注解：条件绑定，有许多子注解，常用子注解
 

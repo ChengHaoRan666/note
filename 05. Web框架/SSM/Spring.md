@@ -70,9 +70,9 @@ AOP 需要导入 jar 包：
 
 > IOC 思想基于 IOC 容器完成，IOC 容器底层就是对象工厂
 
-- `BeanFactory`：IOC 容器基本实现，是 Spring 内部的使用接口，不提供开发人员进行使用。==加载配置文件时候不会创建对象，在获取对象（使用）才去创建对象==
+- `BeanFactory`：IOC 容器基本实现，是 Spring 内部的使用接口，不提供开发人员进行使用。<mark>加载配置文件时候不会创建对象，在获取对象（使用）才去创建对象</mark>
 
-- `ApplicationContext`：BeanFactory 接口的子接口，提供更多更强大的功能，一般由开发人员进行使用。==加载配置文件时候就会把在配置文件对象进行创建==
+- `ApplicationContext`：BeanFactory 接口的子接口，提供更多更强大的功能，一般由开发人员进行使用。<mark>加载配置文件时候就会把在配置文件对象进行创建</mark>
 
 实现`ApplicationContext`接口的有两个类：`FileSystemXmlApplicationContext` 和`ClassPathXmlApplicationContext`。
 
@@ -504,13 +504,13 @@ public class beanPostProcessor implements BeanPostProcessor {
 
 ##### 4.4.1 基于 注解 操作创建对象
 
-- ==@Component==：用于普通创建对象
+- <mark>@Component</mark>：用于普通创建对象
 
-- ==@Service==：用于 service 层
+- <mark>@Service</mark>：用于 service 层
 
-- ==@Controller==用于 web 层
+- <mark>@Controller</mark>用于 web 层
 
-- ==@Repository==：用于 dao 层
+- <mark>@Repository</mark>：用于 dao 层
 
 四个注解都可以用来创建 bean 实例
 
@@ -585,15 +585,15 @@ public class AnnotateTest {
 
 ##### 4.4.3 基于 注解 操作注入属性
 
-- ==@Autowired==：根据属性类型进行注入
-- ==@Qualifier==：根据名称注入，要和==@Autowired==一起使用
-- ==@Resource==：根据属性类型或名称进行注入
+- <mark>@Autowired</mark>：根据属性类型进行注入
+- <mark>@Qualifier</mark>：根据名称注入，要和<mark>@Autowired</mark>一起使用
+- <mark>@Resource</mark>：根据属性类型或名称进行注入
 
-- ==@Value==：注入普通类型属性
+- <mark>@Value</mark>：注入普通类型属性
 
 
 
-==@Autowired==根据属性类型自动装配：
+<mark>@Autowired</mark>根据属性类型自动装配：
 
 ```java
 @Service
@@ -631,9 +631,9 @@ public class UserServiceTest {
 
 
 
-==@Qualifier==根据名称自动注入：
+<mark>@Qualifier</mark>根据名称自动注入：
 
-> 要和 ==@Autowired== 一起使用，进行更具体筛选
+> 要和 <mark>@Autowired</mark> 一起使用，进行更具体筛选
 
 ```java
 @Service
@@ -652,7 +652,7 @@ public class UserService {
 
 
 
-==@Resource==根据类型 或 名称 进行注入
+<mark>@Resource</mark>根据类型 或 名称 进行注入
 
 ```java
 @Service
@@ -670,7 +670,7 @@ public class UserService {
 
 
 
-==@Value== 注入普通类型属性
+<mark>@Value</mark> 注入普通类型属性
 
 ```java
 public class UserService {
@@ -740,16 +740,16 @@ UserService.class);
 
 ### 2. AOP  操作用语
 
-1. ==连接点==：类里面那些方法可以被增强，这些方法称为连接点
-2. ==切入点==：实际被增强的方法，称为切入点
-3. ==通知(增强)==：实际增强的逻辑部分称为通知(增强)，
+1. <mark>连接点</mark>：类里面那些方法可以被增强，这些方法称为连接点
+2. <mark>切入点</mark>：实际被增强的方法，称为切入点
+3. <mark>通知(增强)</mark>：实际增强的逻辑部分称为通知(增强)，
    通知有多种类型：
    a. 前置通知 ：通知在切入点之前执行
    b. 后置通知 ：通知在切入点之后执行
    c. 环绕通知 ：通知在切入点之前之后都执行
    d. 异常通知 ：通知在切入点出现异常时执行
    e. 最终通知 ：无论有没有异常都执行
-4. ==切面==：切面是动作，是指把通知应用到切入点的过程
+4. <mark>切面</mark>：切面是动作，是指把通知应用到切入点的过程
 
 
 
@@ -873,7 +873,7 @@ UserService.class);
 
    
 
-在第⑥步时方法的注解有五种，分别对应==前置通知==，==后置通知==，==环绕通知==，==异常通知==，==最终通知==。分别用注解
+在第⑥步时方法的注解有五种，分别对应<mark>前置通知</mark>，<mark>后置通知</mark>，<mark>环绕通知</mark>，<mark>异常通知</mark>，<mark>最终通知</mark>。分别用注解
 
 ```java
 @Component

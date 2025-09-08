@@ -571,7 +571,7 @@ public class Response2 extends HttpServlet {
 - 不共享 Request 域中的数据
 - 可以访问工程外的资源
 
-==方法二：（推荐使用）==
+<mark>方法二：（推荐使用）</mark>
 
 ```java
 public class Response1 extends HttpServlet {

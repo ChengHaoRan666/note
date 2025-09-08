@@ -108,13 +108,13 @@ public class LoginServlet extends HttpServlet {
 
 Filter 的生命周期包含几个方法：
 
-1. ==构造器方法==
+1. <mark>构造器方法</mark>
 
-2. ==init 初始化方法==
+2. <mark>init 初始化方法</mark>
 
-3. ==doFilter 过滤方法==
+3. <mark>doFilter 过滤方法</mark>
 
-4. ==destroy 销毁==
+4. <mark>destroy 销毁</mark>
 
 
 

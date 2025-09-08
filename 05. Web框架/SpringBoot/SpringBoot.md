@@ -202,7 +202,7 @@ public class Hello {
 
 #### 3.2 原生配置文件引入
 
-**==@ImportResource==** 用于将 xml 配置文件注入到 Spring 容器中（针对不想讲xml文件改为java文件的）
+<mark>**@ImportResource**</mark> 用于将 xml 配置文件注入到 Spring 容器中（针对不想讲xml文件改为java文件的）
 
 ```xml
 ======================beans.xml=========================
@@ -237,9 +237,9 @@ public class MyConfig {}
 
 ##### 1. @ConfigurationProperties + @Component
 
-==@Component==注解将类加入到容器中
+<mark>@Component</mark>注解将类加入到容器中
 
-==@ConfigurationProperties（prefix = "在配置文件中的前缀"）== 注解可以将配置信息自动导入到<font color="red">已经在容器中的 Bean</font>
+<mark>@ConfigurationProperties（prefix = "在配置文件中的前缀"）</mark> 注解可以将配置信息自动导入到<font color="red">已经在容器中的 Bean</font>
 
 ```java
 @Autowired
@@ -270,9 +270,9 @@ a.name=name
 
 ##### 2. @EnableConfigurationProperties + @ConfigurationProperties
 
-==@EnableConfigurationProperties（类名.class）==在<font color="red">配置类上写</font>，指明开启属性绑定并且将该类加入容器中
+<mark>@EnableConfigurationProperties（类名.class）</mark>在<font color="red">配置类上写</font>，指明开启属性绑定并且将该类加入容器中
 
-==@ConfigurationProperties(prefix="在配置文件中的前缀")==在类上写
+<mark>@ConfigurationProperties(prefix="在配置文件中的前缀")</mark>在类上写
 
 ```java
 @Configuration(proxyBeanMethods = false)
@@ -732,7 +732,7 @@ protected void doDispatch(HttpServletRequest request, HttpServletResponse respon
 
 1. `@PathVariable`
    可以获取url的参数
-   ==@PathVariable Map<String, String> map==可以获取所有参数
+   <mark>@PathVariable Map<String, String> map</mark>可以获取所有参数
 
    ```java
    @RequestMapping("/car/{id}/name/{name}")
@@ -746,7 +746,7 @@ protected void doDispatch(HttpServletRequest request, HttpServletResponse respon
 
 2. `@RequestHeader `
    可以获取请求头信息
-   ==@RequestHeader Map<String, Object> map==可以获取全部请求头信息
+   <mark>@RequestHeader Map<String, Object> map</mark>可以获取全部请求头信息
 
    ```java
    @RequestMapping("/car/{id}/name/{name}")
@@ -911,7 +911,7 @@ url：http://localhost:8080/json1?format=json
 >
 >字符串拼接: **+**
 >
->变量替换: ==|The name is ${name}|== 
+>变量替换: <mark>|The name is ${name}|</mark> 
 >
 >运算符: +   -   *   /   %
 >
@@ -1074,7 +1074,7 @@ public class webConfig implements WebMvcConfigurer {
 </form>
 ```
 
-> 加上==multiple==允许选中多个文件
+> 加上<mark>multiple</mark>允许选中多个文件
 
 
 

@@ -623,7 +623,7 @@ type="JNDI"：调用上下文中的数据源
 
 ### 2. 获取多个参数
 
-若mapper接口中的方法参数为多个时，此时MyBatis==会自动将这些参数放在一个map集合==中，以<font color="red">arg0,arg1...</font>为键，以参数为值；以<font color="red">param1,param2...</font>为键，以参数为值；因此只需要通过`#{}`访问map集合的键就可以获取相对应的值
+若mapper接口中的方法参数为多个时，此时MyBatis<mark>会自动将这些参数放在一个map集合</mark>中，以<font color="red">arg0,arg1...</font>为键，以参数为值；以<font color="red">param1,param2...</font>为键，以参数为值；因此只需要通过`#{}`访问map集合的键就可以获取相对应的值
 
 ```java
 public void insertUserTest() throws IOException {
@@ -653,7 +653,7 @@ public void insertUserTest() throws IOException {
 
 ### 3. 获取 map 集合类型的参数
 
-若mapper接口中的方法需要的参数为多个时，此时可以手动创建map集合，将这些数据放在map中，只需要通过和`#{}`访问==map集合的键==就可以获取相对应的值。
+若mapper接口中的方法需要的参数为多个时，此时可以手动创建map集合，将这些数据放在map中，只需要通过和`#{}`访问<mark>map集合的键</mark>就可以获取相对应的值。
 
 ```java
 @Test
@@ -685,7 +685,7 @@ int insertUser(Map<String,String> map);
 
 ### 4. 获取实体类型的参数
 
-若mapper接口中的方法参数为实体类对象时，此时可以使用`#{}`，通过==访问实体类对象中的属性名获取属性值==
+若mapper接口中的方法参数为实体类对象时，此时可以使用`#{}`，通过<mark>访问实体类对象中的属性名获取属性值</mark>
 
 ```java
 int insertUser(user user);
@@ -1331,7 +1331,7 @@ select <include refid="empColumns"></include> from t_emp
 
 ### 1.Mybatis 的一级缓存
 
-==一级缓存是SqlSession级别的==，通过同一个SqlSession查询的数据会被缓存，下次查询相同的数据，就会从缓存中直接获取，不会从数据库重新访问。
+<mark>一级缓存是SqlSession级别的</mark>，通过同一个SqlSession查询的数据会被缓存，下次查询相同的数据，就会从缓存中直接获取，不会从数据库重新访问。
 
 使一级缓存失效的四种情况：
 
@@ -1349,7 +1349,7 @@ select <include refid="empColumns"></include> from t_emp
 
 ### 2.Mybatis 的二级缓存
 
-二级缓存是==SqlSessionFactory级别==，通过同一个 SqlSessionFactory 创建的 SqlSession 查询的结果会被缓存；此后若再次执行相同的查询语句，结果就会从缓存中获取
+二级缓存是<mark>SqlSessionFactory级别</mark>，通过同一个 SqlSessionFactory 创建的 SqlSession 查询的结果会被缓存；此后若再次执行相同的查询语句，结果就会从缓存中获取
 
 二级缓存开启的条件：
 
@@ -1391,7 +1391,7 @@ select <include refid="empColumns"></include> from t_emp
 
 - readOnly属性：只读，true/false
   1. true：只读缓存；会给所有调用者返回缓存对象的相同实例。因此这些对象不能被修改。这提供了很重要的性能优势。
-  2. false：读写缓存；会返回缓存对象的拷贝（通过序列化）。这会慢一些，但是安全，因此==默认是false==。
+  2. false：读写缓存；会返回缓存对象的拷贝（通过序列化）。这会慢一些，但是安全，因此<mark>默认是false</mark>。
 
 
 

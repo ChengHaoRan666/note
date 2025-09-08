@@ -141,7 +141,7 @@ MVC的工作流程：
 
 请求控制器中每一个处理请求的方法称为控制器方法。
 
-应为SpringMVC的控制器由一个POJO(普通的java类)担任，因此需要通过==@Controller==注解将其标识为一个控制层组件，交给Spring的IOC容器管理，才能识别出控制器的存在。
+应为SpringMVC的控制器由一个POJO(普通的java类)担任，因此需要通过<mark>@Controller</mark>注解将其标识为一个控制层组件，交给Spring的IOC容器管理，才能识别出控制器的存在。
 
 注意：使用注解要开启组件扫描功能
 
@@ -224,7 +224,7 @@ public String toTarget() {
 
 1. 浏览器发送请求。
 2. 若请求地址符合前端控制器的url-pattern，该请求就会被前端控制器DispatcherServlet 处理。
-3. 前端控制器会读取 SpringMVC 的核心配置文件，通过扫描组件找到控制器，将请求地址和控制器中==@RequestMapping==注解的value属性值进行匹配。
+3. 前端控制器会读取 SpringMVC 的核心配置文件，通过扫描组件找到控制器，将请求地址和控制器中<mark>@RequestMapping</mark>注解的value属性值进行匹配。
 4. 若匹配成功，该注解所标识的控制器方法就是处理请求的方法。处理请求的方法需要返回一个字符串类型的视图名称，该视图名称会被视图解析器解析，加上前缀和后缀组成视图的路径。
 5. 之后通过Thymeleaf对视图进行渲染，最终<font color="red">转发</font>到视图所对应页面。
 
@@ -234,7 +234,7 @@ public String toTarget() {
 
 ### 1.@RequestMapping 注解的功能
 
-==@RequestMapping== 注解的作用就是将请求和处理请求的控制器方法关联起来，建立映射关系。
+<mark>@RequestMapping</mark> 注解的作用就是将请求和处理请求的控制器方法关联起来，建立映射关系。
 
 SpringMVC 接收到指定的请求，就会来找到在映射关系中对应的控制器方法来处理这个请求。
 
@@ -272,7 +272,7 @@ value属性通过请求的<font color="red">请求地址</font>匹配请求映�
 
 value属性是一个**字符串类型**的数组，表示该请求映射能够匹配多个请求地址所对应的请求，只要满足一个请求地址即可
 
-==@RequestMapping== 注解的 value 属性必须设置
+<mark>@RequestMapping</mark> 注解的 value 属性必须设置
 
 ```java
 @RequestMapping(value = {"/testRequestMapping","/test"})
@@ -296,7 +296,7 @@ method属性是一个RequestMethod类型的 **数组**，表示该请求映射�
 
 若当前请求的请求地址满足请求映射的value属性，但是请求方式不满足method属性，则浏览器报错405：Request method 'POST' not supported
 
-> ==@RequestMapping== 默认是匹配 get 和 post 都满足
+> <mark>@RequestMapping</mark> 默认是匹配 get 和 post 都满足
 
 ```java
 @RequestMapping(value = {"/testRequestMapping", "/test"}, method = {RequestMethod.GET})
@@ -428,7 +428,7 @@ headers属性是一个字符串数组，可以通过四种表达式设置请求�
 
 rest方式：/deleteUser/1(不采用 key = val 的形式)
 
-SpringMVC路径中的占位符常用于RESTful风格中，当请求路径中将某些数据通过路径的方式传输到服务器中，就可以在相应的 @RequestMapping 注解的value属性中通过占位符 {xxx} 表示传输的数据，在通过==@PathVariable==注解，将占位符所表示的数据赋值给控制器方法的形参
+SpringMVC路径中的占位符常用于RESTful风格中，当请求路径中将某些数据通过路径的方式传输到服务器中，就可以在相应的 @RequestMapping 注解的value属性中通过占位符 {xxx} 表示传输的数据，在通过<mark>@PathVariable</mark>注解，将占位符所表示的数据赋值给控制器方法的形参
 
 ```html
 <a th:href="@{/testRest/1/admin}">测试路径中的占位符-->/testRest</a><br>
@@ -1073,7 +1073,7 @@ public String RequestBody(@RequestBody String req) {
 
 ### 2. RequestEntity
 
-RequestEntity封装<font color="red">请求报文</font>的一种类型，需要在控制器方法的形参中设置该类型的形参，当前请求的请求报文就会赋值给该形参，可以通过==getHeaders()==获取请求头信息，通过==getBody()==获取请求体信息
+RequestEntity封装<font color="red">请求报文</font>的一种类型，需要在控制器方法的形参中设置该类型的形参，当前请求的请求报文就会赋值给该形参，可以通过<mark>getHeaders()</mark>获取请求头信息，通过<mark>getBody()</mark>获取请求体信息
 
 ```html
 <form th:action="@{/TestRequestEntity}" method="post">
@@ -1157,7 +1157,7 @@ public String TestResponse() {
    <mvc:annotation-driven />
    ```
 
-3. 在处理器方法上使用 ==@ResponseBody== 注解进行标识
+3. 在处理器方法上使用 <mark>@ResponseBody</mark> 注解进行标识
 
 4. 将Java对象直接作为控制器方法的返回值返回，就会自动转换为Json格式的**字符串**
 

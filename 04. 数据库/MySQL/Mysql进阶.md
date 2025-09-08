@@ -10,7 +10,7 @@
 
 #### 1. 连接层
 
-最上层是一些客户端和链接服务，包含本地sock 通信和大多数基于客户端/服务端工具实现的类似于 TCP/IP的通信。主要完成一些类似于==连接处理==、==授权认证==、及相关的安全方案。在该层上引入了线程池的概念，为通过认证安全接入的客户端提供线程。同样在该层上可以实现基于SSL的安全链接。服务器也会为安全接入的每个客户端验证它所具有的操作权限。
+最上层是一些客户端和链接服务，包含本地sock 通信和大多数基于客户端/服务端工具实现的类似于 TCP/IP的通信。主要完成一些类似于<mark>连接处理</mark>、<mark>授权认证</mark>、及相关的安全方案。在该层上引入了线程池的概念，为通过认证安全接入的客户端提供线程。同样在该层上可以实现基于SSL的安全链接。服务器也会为安全接入的每个客户端验证它所具有的操作权限。
 
 
 
@@ -76,7 +76,7 @@ InnoDB是一种兼顾高可用性和高性能的通用存储引擎，在MySQL 5.
 
 ##### 文件存储：
 
-InnoDB存储引擎会将每张表的表结构，数据，索引存放在 ==表名.ibd==文件中。
+InnoDB存储引擎会将每张表的表结构，数据，索引存放在 <mark>表名.ibd</mark>文件中。
 
 > show variables like 'innodb_file_per_table' 
 > 参数设置的是是否将每个表的数据，索引单独存放在一个.ibd文件中。5.6.6之后默认开启
@@ -503,7 +503,7 @@ explain select * from c_class;
 | select_type   | 表示 SELECT 的类型，常见取值：<br> - SIMPLE：简单表（不使用表连接或子查询）<br> - PRIMARY：主查询（外层查询）<br> - UNION：UNION 中的第二个或后面的查询语句<br> - SUBQUERY：在 SELECT/WHERE 之后包含子查询 |
 | table         | 当前查询所涉及的表或衍生表                                   |
 | partitions    | 匹配的分区（仅分区表时显示）                                 |
-| type          | 表示连接类型，性能由好到差依次为：<br> ==NULL → system → const → eq_ref → ref → range → index → all== |
+| type          | 表示连接类型，性能由好到差依次为：<br> <mark>NULL → system → const → eq_ref → ref → range → index → all</mark> |
 | possible_keys | 显示可能应用在这张表上的索引，一个或多个                     |
 | key           | 实际使用的索引，如果为 NULL，则表示没有使用索引              |
 | key_len       | 表示索引中使用的字节数，该值为索引字段最大可能长度（非实际使用长度）。在不损失精确性的前提下，长度越短越好 |
@@ -526,7 +526,7 @@ explain select * from c_class;
 
 > 例如创建了联合索引：
 > `create index idx_sku_sn on tb_sku (id, sn, name)`
-> 对于==id==，==sn==，==name==创建索引
+> 对于<mark>id</mark>，<mark>sn</mark>，<mark>name</mark>创建索引
 >
 > 如果查询语句没有使用id，那么用了sn，name也不能用索引加速
 >
@@ -549,7 +549,7 @@ explain select * from c_class;
 
 > 例如创建了联合索引：
 > `create index idx_sku_sn on tb_sku (id, sn, name)`
-> 对于==id==，==sn==，==name==创建索引
+> 对于<mark>id</mark>，<mark>sn</mark>，<mark>name</mark>创建索引
 >
 > 
 >

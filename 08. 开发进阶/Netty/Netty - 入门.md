@@ -454,7 +454,7 @@ channel.writeAndFlush("123");
 
 - `connect`绑定ip端口后返回的是 ChannelFuture 对象，它的作用是利用 channel() 方法来获取 Channel 对象
 
-> **注意** connect 方法是==异步非阻塞==的，意味着不等连接建立，方法执行就返回了。因此 channelFuture 对象中不能【立刻】获得到正确的 Channel 对象，需要执行`sync`方法阻塞，直到连接建立
+> **注意** connect 方法是<mark>异步非阻塞</mark>的，意味着不等连接建立，方法执行就返回了。因此 channelFuture 对象中不能【立刻】获得到正确的 Channel 对象，需要执行`sync`方法阻塞，直到连接建立
 >
 >
 > 在sync上下分别打印channelFuture和channel可以看到，他们的状态不一样：
@@ -714,7 +714,7 @@ NioEventLoopGroup group = new NioEventLoopGroup();
 | cancel       | 取消任务                       | -                                                            | -            |
 | isCanceled   | 任务是否取消                   | -                                                            | -            |
 | isDone       | 任务是否完成，不能区分成功失败 | -                                                            | -            |
-| get          | 获取任务结果，==阻塞等待==     | -                                                            | -            |
+| get          | 获取任务结果，<mark>阻塞等待</mark>     | -                                                            | -            |
 | getNow       | -                              | 获取任务结果，非阻塞，还未产生结果时返回 null                | -            |
 | await        | -                              | 等待任务结束，如果任务失败，不会抛异常，而是通过 isSuccess 判断 | -            |
 | sync         | -                              | 等待任务结束，如果任务失败，抛出异常                         | -            |

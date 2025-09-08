@@ -48,10 +48,10 @@
 
 常见的`Channel`有：
 
-1. ==FileChannel==：用于读写文件数据的通道
-2. ==DatagramChannel==：用于 UDP 数据包传输的通道
-3. ==SocketChannel==：用于 TCP 客户端连接的通道
-4. ==ServrSocketChannel==：用于 TCP 服务器端监听连接请求的通道
+1. <mark>FileChannel</mark>：用于读写文件数据的通道
+2. <mark>DatagramChannel</mark>：用于 UDP 数据包传输的通道
+3. <mark>SocketChannel</mark>：用于 TCP 客户端连接的通道
+4. <mark>ServrSocketChannel</mark>：用于 TCP 服务器端监听连接请求的通道
 
 <font color="red">`FileChannel`是阻塞的,`DatagramChannel`,`SocketChannel`,`ServrSocketChannel`可以设置是非阻塞的</font>
 
@@ -63,13 +63,13 @@
 
 常用的的`Buffer`有：
 
-1. ==ByteBuffer==：<font color="red">最常用</font>   存储字节数据到缓冲区
-2. ==ShortBuffer==：存储字符串数据到缓冲区
-3. ==IntBuffer==：存储整数数据到缓冲区
-4. ==LongBuffer==：存储长整形数据到缓冲区
-5. ==FloatBuffer==：存储小数到缓冲区
-6. ==DoubleBuffer==：存储小数到缓冲区
-7. ==CharBuffer==：存储字符到缓冲区
+1. <mark>ByteBuffer</mark>：<font color="red">最常用</font>   存储字节数据到缓冲区
+2. <mark>ShortBuffer</mark>：存储字符串数据到缓冲区
+3. <mark>IntBuffer</mark>：存储整数数据到缓冲区
+4. <mark>LongBuffer</mark>：存储长整形数据到缓冲区
+5. <mark>FloatBuffer</mark>：存储小数到缓冲区
+6. <mark>DoubleBuffer</mark>：存储小数到缓冲区
+7. <mark>CharBuffer</mark>：存储字符到缓冲区
 
 
 
@@ -517,8 +517,8 @@ byte b = buf.get(3);
 
 `mark `是在读取时，做一个标记，即使 `position `改变，只要调用 `reset `就能回到 `mark `的位置
 
-- ==buffer.mark();==
-- ==buffer.reset();==
+- <mark>buffer.mark();</mark>
+- <mark>buffer.reset();</mark>
 
 > **注意**
 >
@@ -769,8 +769,8 @@ fileChannel4.close();
 
 #### 4.2.1 获取
 
-1. 通过 `FileInputStream `获取的 channel ==只能读==
-2. 通过 `FileOutputStream `获取的 channel ==只能写==
+1. 通过 `FileInputStream `获取的 channel <mark>只能读</mark>
+2. 通过 `FileOutputStream `获取的 channel <mark>只能写</mark>
 3. 通过 `RandomAccessFile `是否能读写根据构造 RandomAccessFile 时的读写模式决定
 4. 通过 `FileChannel.open` 创建
 
