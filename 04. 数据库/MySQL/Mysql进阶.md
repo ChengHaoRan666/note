@@ -889,17 +889,222 @@ unlock tables;
 
 ### 3. 表级锁
 
+表级锁，每次操作锁住整张表。锁定粒度大，发生锁冲突的概率最高，并发度最低。应用在MyISAM、 InnoDB、BDB等存储引擎中
+
+对于表锁可以分为以下三类：
+
+- 表锁
+- 元数据锁
+- 意向锁
+
+
+
+#### 表锁
+
+对于表锁，分为两类：
+
+- 表共享读锁（read lock）
+- 表独占写锁（write lock）
+
+
+
+语法： 
+
+加锁：`lock tables 表名... read/write`
+
+释放锁：`unlock tables / 客户端断开连接`
+
+
+
+特点：
+
+读锁：客户端1为一张表上了读锁后，客户端2可以读，写将被阻塞；客户端1可以读，写将报错
+
+![读锁](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/读锁.7w767rm2xm.webp)
+
+写锁：客户端1为一张表上了写锁后，客户端2读，写都将被阻塞；客户端1可以读写
+
+![写锁](https://ChengHaoRan666.github.io/picx-images-hosting/MySQL/写锁.8vn9kxq91q.webp)
+
+
+
+
+
+#### 元数据锁
+
+Metadata Lock：元数据锁，简称 MDL
+
+- MDL加锁过程是系统自动控制，无需显式使用，在访问一张表的时候会自动加上
+- MDL锁主要作用是维护表元数据的数据一致性，在表上有活动事务的时候，不可以对元数据进行写入操作。为了避免 增删改查 与 DDL（改表结构）冲突，保证读写的正确性
+- 在MySQL5.5中引入了MDL，当对一张表进行增删改查的时候，加MDL读锁(共享锁，S锁)；当对表结构进行变 更操作的时候，加MDL写锁(排他锁，X锁)
+
+| 对应SQL                                         | 锁类型                                      | 说明                                                 |
+| ----------------------------------------------- | ------------------------------------------- | ---------------------------------------------------- |
+| `lock tables xxx read / write`                  | `SHARED_READ_ONLY` / `SHARED_NO_READ_WRITE` | 表锁                                                 |
+| `select、select ... lock in share mode`         | `SHARED_READ`                               | 与 SHARED_READ、SHARED_WRITE 兼容，与 EXCLUSIVE 互斥 |
+| `insert、update、delete、select ... for update` | `SHARED_WRITE`                              | 与 SHARED_READ、SHARED_WRITE 兼容，与 EXCLUSIVE 互斥 |
+| `alter table ...`                               | `EXCLUSIVE`                                 | 与其他的 MDL 都互斥                                  |
+
+
+
+> MDL锁是表锁，只关心增删改查和修改表结构的冲突，增删改和查询之间的冲突MDL不关心
+>
+> 增删改和查询之间的冲突是由行级锁解决的
+
+
+
+```sql
+-- 查询元数据锁
+select object_type, object_schema, object_name, lock_type, lock_duration
+from performance_schema.metadata_locks;
+```
+
+
+
+#### 意向锁
+
+意向锁是为了解决多个客户端对于一个表和这个表中行加锁的冲突问题
+
+没有意向锁：当一个客户端对一张表加表级锁时，需要判断这个表上的每一行有没有行级锁，需要便利判断，效率低
+
+有意向锁：当一个客户端对一张表里的一行加上行级锁时，同时也会对这个表加上意向锁，这样其他客户端想对这张表加表级锁时，只需要判断这张表有没有意向锁就行
+
+
+
+分类：
+
+- 意向共享锁(IS): 由语句`select ... lock in share mode`添加 。 与 表锁共享锁 (read)兼容，与表锁排他锁(write)互斥 
+- 意向排他锁(IX): 由`insert`、`update`、`delete`、`select...for update`添加 。与表锁共 享锁(read)及排他锁(write)都互斥
+- 意向锁之间不会互斥
+
+
+
+```sql
+-- 可以查看意向锁和行锁
+select object_schema, object_name, index_name, lock_type, lock_mode, lock_data
+from performance_schema.data_locks;
+```
+
+
+
+
+
+- <font color="red">**意向共享锁不能手工加**，只能由 InnoDB **在你加行级锁时自动加**</font>
+- <font color="red">逻辑是：</font>
+  - <font color="red">如果事务要在表里的某一行加 **共享锁 (S锁)** → InnoDB 自动先在表上加 **意向共享锁 (IS)**</font>
+  - <font color="red">如果事务要在表里的某一行加 **排他锁 (X锁)** → InnoDB 自动先在表上加 **意向排他锁 (IX)**</font>
+
+<font color="red"> 意向锁的唯一目的就是：在表级锁和行级锁之间，快速判断兼容/冲突</font>
+
+
+
 
 
 ### 4. 行级锁
 
+行级锁，每次操作锁住对应的行数据。锁定粒度最小，发生锁冲突的概率最低，并发度最高。应用在 InnoDB 存储引擎中
 
+InnoDB的数据是基于索引组织的，行锁是通过对索引上的索引项加锁来实现的，而不是对记录加的锁
+
+对于行级锁，主要分为以下三类：
+
+1. 行锁
+2. 间隙锁
+3. 临键锁
+
+
+
+#### 行锁
+
+ InnoDB实现了以下两种类型的行锁： 
+
+- 共享锁（S）：允许一个事务去读一行，阻止其他事务获得相同数据集的排它锁
+- 排他锁（X）：允许获取排他锁的事务更新数据，阻止其他事务获得相同数据集的共享锁和排他锁
+
+| 当前锁类型\请求锁类型 | S（共享锁） | X（排他锁） |
+| --------------------- | ----------- | ----------- |
+| S（共享锁）           | 兼容        | 冲突        |
+| X（排他锁）           | 冲突        | 冲突        |
+
+
+
+| SQL 语句                      | 锁类型 | 说明                                        |
+| ----------------------------- | ------ | ------------------------------------------- |
+| INSERT ...                    | 排他锁 | 自动加锁                                    |
+| UPDATE ...                    | 排他锁 | 自动加锁                                    |
+| DELETE ...                    | 排他锁 | 自动加锁                                    |
+| SELECT （普通查询）           | 无锁   | 不加任何锁                                  |
+| SELECT ... LOCK IN SHARE MODE | 共享锁 | 需要手动在 SELECT 之后加 LOCK IN SHARE MODE |
+| SELECT ... FOR UPDATE         | 排他锁 | 需要手动在 SELECT 之后加 FOR UPDATE         |
+
+
+
+1. 默认情况下，InnoDB在 REPEATABLE READ事务隔离级别运行，InnoDB使用 next-key 锁进行搜索和索引扫描，以防止幻读
+2. 针对唯一索引进行检索时，对已存在的记录进行等值匹配时，将会自动优化为行锁
+3.  InnoDB的行锁是针对于索引加的锁，不通过索引条件检索数据，那么InnoDB将对表中的所有记录加锁，此时就会升级为表锁
+
+```sql
+-- 可以查看意向锁和行锁
+select object_schema, object_name, index_name, lock_type, lock_mode, lock_data
+from performance_schema.data_locks;
+```
+
+
+
+#### 间隙锁 & 临键锁
+
+间隙锁 (Gap Lock) 
+
+临键锁 (Next-Key Lock)
+
+```sql
+-- 可以查看意向锁,行锁和间隙锁&临键锁
+select object_schema, object_name, index_name, lock_type, lock_mode, lock_data
+from performance_schema.data_locks;
+```
+
+
+
+默认情况下，InnoDB在 REPEATABLE READ事务隔离级别运行，InnoDB使用 next-key 锁进行搜索和索引扫描，以防止幻读
+
+- 索引上的等值查询(唯一索引)，给不存在的记录加锁时, 优化为间隙锁
+- 索引上的等值查询(非唯一普通索引)，向右遍历时最后一个值不满足查询需求时，next-key lock 退化为间隙锁
+- 索引上的范围查询(唯一索引)--会访问到不满足条件的第一个值为止
+
+> 间隙锁唯一目的是防止其他事务插入间隙。间隙锁可以共存，一个事务采用的间隙锁不会阻止另一个事务在同一间隙上采用间隙锁。
+
+
+
+### 5. 总结
+
+```sql
+-- 加全局锁
+flush tables with read lock;
+
+-- 数据备份（命令行指令）
+mysqldump -uroot –p1234 itcast > itcast.sql
+
+-- 释放锁
+unlock tables;
+```
+
+`lock tables xxx read/write`  表锁：`SHARED_READ_ONLY` / `SHARED_NO_READ_WRITE`
+
+| SQL 类型                      | 行锁         | 意向锁          | 元数据锁 (MDL) |
+| ----------------------------- | ------------ | --------------- | -------------- |
+| INSERT / UPDATE / DELETE      | 行排他锁 (X) | 意向排他锁 (IX) | SHARED_WRITE   |
+| SELECT （普通查询）           | 无           | 无              | SHARED_READ    |
+| SELECT ... LOCK IN SHARE MODE | 行共享锁 (S) | 意向共享锁 (IS) | SHARED_READ    |
+| SELECT ... FOR UPDATE         | 行排他锁 (X) | 意向排他锁 (IX) | SHARED_WRITE   |
+| ALTER TABLE ...               | 无           | 无              | EXCLUSIVE      |
 
 
 
 
 
 ## InnoDB 引擎
+
+
 
 
 
