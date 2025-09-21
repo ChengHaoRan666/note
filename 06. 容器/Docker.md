@@ -552,6 +552,8 @@ volumes:
 
 ## 八. 实践
 
+部署博客网站的mysql，redis，jar包：
+
 ```shell
 docker run \
 --name mysql \

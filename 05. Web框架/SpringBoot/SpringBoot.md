@@ -1569,16 +1569,16 @@ public class junitTest {
 
 #### 2.1 简单断言
 
-| 方法            | 说明                                 |
-| --------------- | ------------------------------------ |
-| assertEquals    | 判断两个对象或两个原始类型是否相等   |
-| assertNotEquals | 判断两个对象或两个原始类型是否不相等 |
-| assertSame      | 判断两个对象引用是否指向同一个对象   |
-| assertNotSame   | 判断两个对象引用是否指向不同的对象   |
-| assertTrue      | 判断给定的布尔值是否为 true          |
-| assertFalse     | 判断给定的布尔值是否为 false         |
-| assertNull      | 判断给定的对象引用是否为 null        |
-| assertNotNull   | 判断给定的对象引用是否不为 null      |
+| 方法              | 说明                                 |
+| ----------------- | ------------------------------------ |
+| `assertEquals`    | 判断两个对象或两个原始类型是否相等   |
+| `assertNotEquals` | 判断两个对象或两个原始类型是否不相等 |
+| `assertSame`      | 判断两个对象引用是否指向同一个对象   |
+| `assertNotSame`   | 判断两个对象引用是否指向不同的对象   |
+| `assertTrue`      | 判断给定的布尔值是否为 true          |
+| `assertFalse`     | 判断给定的布尔值是否为 false         |
+| `assertNull`      | 判断给定的对象引用是否为 null        |
+| `assertNotNull`   | 判断给定的对象引用是否不为 null      |
 
 ```java
 @Test
