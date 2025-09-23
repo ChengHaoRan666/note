@@ -68,7 +68,7 @@
 
 `set key value [NX|XX][GET][EX seconds|PX milliseconds|EXAT unix-time-seconds|PXAT unix=time-milliseconds|KEEPTTL]` 
 
-- `NX`-- 如果key不存在则仅设置该key
+- `NX`-- 只有key不存在才设置key的值
 - `XX`-- 仅当key已存在时才设置它
 - `GET`-- 先返回存储在 key 处的值，在修改key对应的值
 - `EX` *秒数* —— 设置指定的过期时间，以秒为单位（正整数）
