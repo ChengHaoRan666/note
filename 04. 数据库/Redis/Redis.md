@@ -240,7 +240,7 @@ msetnx 要求所以key都不存在
 
 ###### 5. lrem
 
-`lrem key 数字n 数字v `
+`lrem key 数字n v `
 
 删除n个值为v的元素
 
